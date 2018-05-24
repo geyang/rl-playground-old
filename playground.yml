@@ -1,0 +1,14 @@
+name: playground
+channels:
+  - pytorch
+dependencies:
+  - python=3.6.4
+  - numpy
+  - matplotlib
+  - pytorch::pytorch
+  - pytorch::torchvision
+  - dill
+  - pip:
+    - torch-helpers
+    - jaynes
+    - ml-logger
