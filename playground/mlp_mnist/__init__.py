@@ -7,10 +7,6 @@ from torch import nn, optim
 import torch_helpers as h
 
 
-class Flatten(nn.Module):
-    def forward(self, x):
-        return x.view(x.size()[0], -1)
-
 
 class Conv2d(nn.Module):
     def __init__(self):
@@ -20,7 +16,7 @@ class Conv2d(nn.Module):
             nn.MaxPool2d(2, 2),
             nn.Conv2d(20, 50, kernel_size=5),
             nn.MaxPool2d(2, 2),
-            Flatten(),
+            h.Flatten(),
             nn.Linear(4 * 4 * 50, 500),
             nn.Linear(500, 10),
             nn.Softmax(dim=-1)
@@ -34,16 +30,16 @@ class Mlp(nn.Module):
     def __init__(self):
         super(Mlp, self).__init__()
         self.model = nn.Sequential(
-            Flatten(),
+            h.Flatten(),
             nn.Linear(28 * 28, 64),
-            nn.Dropout(0.7),
             nn.ReLU(),
+            nn.Dropout(0.7),
             nn.Linear(64, 128),
-            nn.Dropout(0.7),
             nn.ReLU(),
+            nn.Dropout(0.7),
             nn.Linear(128, 128),
-            nn.Dropout(0.7),
             nn.ReLU(),
+            nn.Dropout(0.7),
             nn.Softmax(dim=-1)
         )
 
@@ -55,17 +51,23 @@ class Mlp(nn.Module):
 class G:
     log_dir = os.path.realpath("./outputs")
     data_dir = "./__dataset"
+    model = 'lenet'
     batch_size = 1000
     n_epochs = 20
     test_interval = 10
     learning_rate = 0.1
 
 
-if __name__ == "__main__":
+def train():
     from moleskin import moleskin as M
+
     M.tic('Full Run')
-    # model = Conv2d()
-    model = Mlp()
+    if G.model == "lenet":
+        model = Conv2d()
+    elif G.model == 'mlp':
+        model = Mlp()
+    else:
+        raise NotImplementedError('only lenet and mlp are allowed')
     model.train()
     print(model)
 
@@ -91,15 +93,18 @@ if __name__ == "__main__":
             loss.backward()
             adam.step()
 
-
             if it % G.test_interval == 0:
-                with h.Eval(model):
+                with h.Eval(model), torch.no_grad():
                     accuracy = h.Average()
                     for x, label in test_loader:
                         acc = h.cast(h.one_hot_to_int(model(x).detach()) == label, float).sum() / len(x)
-                        accuracy.add(acc)
-                    print(f"accuracy: {accuracy.value:.2%}")
+                        accuracy.add(acc.detach().numpy())
+                logger.log(float(epoch) + it / len(train_loader), accuracy=accuracy.value)
 
         M.split("epoch")
         # logger.log(epoch, it=it, loss=loss.detach().numpy())
     M.toc('Full Run')
+
+
+if __name__ == "__main__":
+    train()
