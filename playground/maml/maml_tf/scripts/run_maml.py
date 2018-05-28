@@ -77,7 +77,7 @@ def run_e_maml():
 
     # with Dashboard(config.RUN.prefix, server=config.Reporting.plot_server,
     #                port=config.Reporting.plot_server_port) as dash, U.single_threaded_session(), tasks, test_tasks:
-    with U.single_threaded_session(), tasks, test_tasks:
+    with U.make_session(num_cpu=config.G.n_cpu), tasks, test_tasks:
         # logger.on_dumpkvs(make_plot_fn(dash))
         maml = E_MAML(ob_space=tasks.envs.observation_space, act_space=tasks.envs.action_space)
         summary = tf.summary.FileWriter(config.RUN.log_directory, tf.get_default_graph())

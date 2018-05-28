@@ -5,6 +5,8 @@
 
 *__dataset
 *outputs
+*runs
+*run
 
 # pytest output directories
 .pytest*
