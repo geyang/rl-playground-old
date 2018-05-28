@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from .custom_vendor import logger
+from ml_logger import logger
 from .e_maml_ge import E_MAML
 from .ge_policies import MlpPolicy
 from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
@@ -138,7 +138,7 @@ class Trainer(object):
                     episode_r = avg_r * tasks.spec.max_episode_steps  # default horizon for HalfCheetah
 
                     if k in G.eval_grad_steps:
-                        batch_data['grad_{}_step'.format(k)].append(avg_r if Reporting.report_mean else episode_r)
+                        batch_data['grad_{}_step_reward'.format(k)].append(avg_r if Reporting.report_mean else episode_r)
 
                     if episode_r < G.term_reward_threshold:
                         # todo: make this based on batch instead of a single episode.
@@ -189,7 +189,8 @@ class Trainer(object):
 
             for key in batch_data.keys():
                 reduced = np.array(batch_data[key]).mean()
-                logger.logkv(key, reduced)
+                logger.log_keyvalue(epoch_ind, key, reduced)
+
 
             if should_test and test_tasks is not None:
                 maml.save_checkpoint()
@@ -197,16 +198,14 @@ class Trainer(object):
                 test_envs = test_tasks.envs
                 test_envs.reset()
                 p = self.sample_from_env(test_envs, maml.runner.policy, timestep_limit=test_tasks.spec.timestep_limit)
-                logger.logkv("pre-update", np.mean(p['rewards']))
+                logger.log(epoch_ind, pre_update_rewards=np.mean(p['rewards']))
                 p = self.sample_from_env(test_envs, maml.runner.policy)
                 runner_feed_dict = \
                     path_to_feed_dict(inputs=maml.runner.inputs, paths=p, lr=alpha_lr, clip_range=clip_range)
                 maml.runner.model.run_optimize(feed_dict=runner_feed_dict)
                 p = self.sample_from_env(test_envs, maml.runner.policy, timestep_limit=test_tasks.spec.timestep_limit)
-                logger.logkv("post-update", np.mean(p['rewards']))
+                logger.log(epoch_ind, post_update_rewards=np.mean(p['rewards']))
                 maml.load_checkpoint()
-
-            logger.dumpkvs()
 
             if should_plot and callable(plot_fn):
                 plot_fn(save=True if should_save or is_the_end else False, lr=beta_lr)
