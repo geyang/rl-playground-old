@@ -4,13 +4,13 @@ from contextlib import ExitStack
 import tensorflow as tf
 
 import baselines.common.tf_util as U
-from playground.maml.e_maml_ge.meta_rl_tasks import ALLOWED_ENVS, MetaRLTasks
+from playground.maml.maml_tf.meta_rl_tasks import ALLOWED_ENVS, MetaRLTasks
 import numpy as np
 
 from ml_logger import logger
-from playground.maml.e_maml_ge import config
-from playground.maml.e_maml_ge.e_maml_ge import E_MAML
-from playground.maml.e_maml_ge.trainer import Trainer
+from playground.maml.maml_tf import config
+from playground.maml.maml_tf.e_maml_ge import E_MAML
+from playground.maml.maml_tf.trainer import Trainer
 
 ind = 0
 cache = defaultdict(lambda: deque(maxlen=config.Reporting.plot_smoothing))

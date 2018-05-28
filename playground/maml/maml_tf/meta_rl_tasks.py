@@ -1,10 +1,10 @@
 import gym
 import numpy
 
-from playground.maml.e_maml_ge import config
-from playground.maml.e_maml_ge.custom_vendor import IS_PATCHED, MAZES  # GRID_WORLDS
+from playground.maml.maml_tf import config
+from playground.maml.maml_tf.custom_vendor import IS_PATCHED, MAZES  # GRID_WORLDS
 from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
-from playground.maml.e_maml_ge.vec_env_normalize import vec_normalize
+from playground.maml.maml_tf.vec_env_normalize import vec_normalize
 
 assert IS_PATCHED, "need to use patch for new env and proper monitor wraps"
 
