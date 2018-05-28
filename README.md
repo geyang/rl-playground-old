@@ -7,7 +7,7 @@ pip install playground
 ## Usage
 
 ```bash
-conda create -f ./playground.yml
+conda env create -f ./playground.yml
 ```
 
 
