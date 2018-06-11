@@ -1,0 +1,77 @@
+%YAML 1.2
+---
+config:
+  # 8 gives better usage of i7 CPU.
+  max_concurrent: 4
+env:
+  DISPLAY: ":1"
+  PYTHONPATH: $HOME/machine_learning/meta_learning_project/packages
+run: |
+  {env} python e_maml_ge.py {args}
+default_args:
+  # experiment parameters
+  run_mode: "baselines" # one of ['maml", "e_maml", "baselines"]
+  log_directory: "../test_runs/baselines/vpg-tuning/{time:%Y-%m-%d}-{time:%H%M%S.%f}/"
+  env_name: HalfCheetah-v1
+  start_seed: 42
+  render: false
+  eval_plot_interval: 1 # "interval for plotting the loss"
+  eval_save_interval: 50 # "interval for saving plot figure"
+  # Training Parameters
+  n_tasks: 40
+  n_grad_steps: 1
+  n_epochs: 12000
+  n_parallel_envs: 8
+  env_horizon_max_steps: 128
+  n_updates_per_batch: 1
+  alpha: 0.05
+  beta: 0.05
+  # model parameters
+  first_order: false
+  inner_alg: VPG
+  inner_optimizer: Adam
+  meta_alg: PPO
+  eval_grad_steps:  "0 1"
+  num_grad_steps: 1
+  # Model Options (PPO)
+  vf_coef: 0.5
+  ent_coef: 0.0
+  max_grad_norm: 0.5
+  clip_range: 0.2
+  # GAE parameters
+  gamma: 0.99
+  lam: 0.95
+  # plotting
+  dpi: 150
+batch_args: # use good typing convention here
+  - eval_plot_interval: 5
+    n_parallel_envs: 1
+    env_horizon_max_steps: 1024
+    n_updates_per_batch: 1
+    inner_optimizer: SGD
+    alpha: 0.0001
+#  - eval_plot_interval: 5
+#    n_parallel_envs: 8
+#    env_horizon_max_steps: 128
+#    n_updates_per_batch: 4
+#    alpha: 0.0001
+#  - eval_plot_interval: 5
+#    n_parallel_envs: 8
+#    env_horizon_max_steps: 128
+#    n_updates_per_batch: 16
+#    alpha: 0.0001
+#  - eval_plot_interval: 5
+#    n_parallel_envs: 8
+#    env_horizon_max_steps: 128
+#    n_updates_per_batch: 1
+#    alpha: 0.0003
+#  - eval_plot_interval: 5
+#    n_parallel_envs: 8
+#    env_horizon_max_steps: 128
+#    n_updates_per_batch: 1
+#    alpha: 0.001
+#  - eval_plot_interval: 5
+#    n_parallel_envs: 8
+#    env_horizon_max_steps: 512
+#    n_updates_per_batch: 1
+#    alpha: 0.001

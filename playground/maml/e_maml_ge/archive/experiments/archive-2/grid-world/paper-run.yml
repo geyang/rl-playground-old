@@ -1,0 +1,51 @@
+%YAML 1.2
+---
+config:
+  # 8 gives better usage of i7 CPU.
+  max_concurrent: 2
+env:
+  DISPLAY: ":1"
+  PYTHONPATH: $HOME/machine_learning/meta_learning_project/packages
+run: |
+  {env} python run_maml.py {args}
+default_args:
+  # experiment parameters
+  plot_mean: 1  # plot the mean instead of the total reward per step
+  start_seed: 42
+  render: false
+  eval_plot_interval: 1 # "interval for plotting the loss"
+  eval_save_interval: 10 # "interval for saving plot figure"
+  # Training Parameters
+  env_max_timesteps: 0
+  # Model Options (PPO)
+  vf_coef: 0.5 # idea is to use this to reduce the update on the value function
+  ent_coef: 0.0
+  max_grad_norm: 0.5
+  clip_range: 0.2
+  # GAE parameters
+  gamma: 0.99
+  lam: 0.95
+  # MAML params
+  first_order: false
+  alpha: 1.0  # or 0.5
+  inner_alg: PPO
+  inner_optimizer: SGD
+  # beta: 0.008
+  beta: 0.001
+  meta_alg: PPO
+  meta_optimizer: Adam
+  #  environment to run
+  env_name: "MediumWorld-v0"
+  # training params
+  n_epochs: 2000
+  n_tasks: 40
+  n_parallel_envs: 4
+  batch_timesteps: 6
+  # MAML
+  n_grad_steps: 1
+  eval_grad_steps:  "0 1"
+batch_args: # use good typing convention here
+  - run_mode: maml
+    log_directory: /mnt/slab/krypton/machine_learning/paper-runs/{time:%Y-%m-%d}/medium-world/{time:%H%M%S.%f}-vanilla-maml/
+#  - run_mode: e_maml
+#    log_directory: /mnt/slab/krypton/machine_learning/paper-runs/{time:%Y-%m-%d}/medium-world/{time:%H%M%S.%f}-e-maml/

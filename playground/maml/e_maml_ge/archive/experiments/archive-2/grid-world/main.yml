@@ -1,0 +1,149 @@
+%YAML 1.2
+---
+config:
+  # 8 gives better usage of i7 CPU.
+  max_concurrent: 2
+env:
+  DISPLAY: ":1"
+  PYTHONPATH: $HOME/machine_learning/meta_learning_project/packages
+run: |
+  {env} python run_maml.py {args}
+default_args:
+  # experiment parameters
+  env_name: "EasyWorld-v0"
+  plot_mean: 1  # plot the mean instead of the total reward per step
+  start_seed: 200
+  render: false
+  eval_plot_interval: 1 # "interval for plotting the loss"
+  eval_save_interval: 10 # "interval for saving plot figure"
+  # Training Parameters
+  n_tasks: 1
+  n_grad_steps: 0
+  n_epochs: 100
+  batch_timesteps: 128
+  env_max_timesteps: 0
+  # model parameters
+  first_order: false
+  alpha: 1.0
+  inner_alg: PPO
+  inner_optimizer: Adam
+  beta: 0.03
+  meta_alg: PPO
+  meta_optimizer: Adam
+  # Model Options (PPO)
+  vf_coef: 0.5 # idea is to use this to reduce the update on the value function
+  ent_coef: 0.0
+  max_grad_norm: 0.5
+  clip_range: 0.2
+  # GAE parameters
+  gamma: 0.99
+  lam: 0.95
+batch_args: # use good typing convention here
+    # # DEBUG parameters
+    # no_state_dict: 0
+    # no_task_resample: 0
+    # debug_params: 0
+    # run parameters
+#    NEXT: try to test multiple gradient descent on the same data.
+#  - run_mode: maml
+#    env_name: "HardWorld-v0"
+#    log_directory: /mnt/slab/krypton/machine_learning/grid-world/hard/{time:%Y-%m-%d}/{time:%H%M%S.%f}-vanilla-maml/
+#    n_epochs: 1300
+#    n_tasks: 10
+#    n_parallel_envs: 10
+#    n_grad_steps: 4
+#    eval_grad_steps:  "0 1 2 3 4"
+#    batch_timesteps: 64
+#    # MAML params
+#    alpha: 1.0  # or 0.5
+#    inner_alg: PPO
+#    inner_optimizer: SGD
+##    beta: 0.008
+#    beta: 0.005
+#    meta_alg: PPO
+#    meta_optimizer: Adam
+#  - run_mode: e_maml
+#    env_name: "HardWorld-v0"
+#    log_directory: /mnt/slab/krypton/machine_learning/grid-world/hard/{time:%Y-%m-%d}/{time:%H%M%S.%f}-e-maml/
+#    n_epochs: 1300
+#    n_tasks: 10
+#    n_parallel_envs: 10
+#    n_grad_steps: 4
+#    eval_grad_steps:  "0 1 2 3 4"
+#    batch_timesteps: 64
+#    # MAML params
+#    alpha: 1.0  # or 0.5
+#    inner_alg: PPO
+#    inner_optimizer: SGD
+##    beta: 0.008
+#    beta: 0.005
+#    meta_alg: PPO
+#    meta_optimizer: Adam
+#  - run_mode: maml
+#    env_name: "EasyWorld-v0"
+#    log_directory: /mnt/slab/krypton/machine_learning/grid-world/easy/{time:%Y-%m-%d}/{time:%H%M%S.%f}-vanilla-maml/
+#    n_epochs: 1300
+#    n_tasks: 10
+#    n_parallel_envs: 10
+#    n_grad_steps: 4
+#    eval_grad_steps:  "0 1 2 3 4"
+#    batch_timesteps: 64
+#    # MAML params
+#    alpha: 1.0  # or 0.5
+#    inner_alg: PPO
+#    inner_optimizer: SGD
+##    beta: 0.008
+#    beta: 0.005
+#    meta_alg: PPO
+#    meta_optimizer: Adam
+#  - run_mode: e_maml
+#    env_name: "EasyWorld-v0"
+#    log_directory: /mnt/slab/krypton/machine_learning/grid-world/easy/{time:%Y-%m-%d}/{time:%H%M%S.%f}-e-maml/
+#    n_epochs: 1300
+#    n_tasks: 10
+#    n_parallel_envs: 10
+#    n_grad_steps: 4
+#    eval_grad_steps:  "0 1 2 3 4"
+#    batch_timesteps: 64
+#    # MAML params
+#    alpha: 1.0  # or 0.5
+#    inner_alg: PPO
+#    inner_optimizer: SGD
+##    beta: 0.008
+#    beta: 0.005
+#    meta_alg: PPO
+#    meta_optimizer: Adam
+  - run_mode: maml
+    env_name: "MediumWorld-v0"
+    log_directory: /mnt/slab/krypton/machine_learning/grid-world/medium/{time:%Y-%m-%d}/{time:%H%M%S.%f}-vanilla-maml/
+    n_epochs: 1300
+    n_tasks: 10
+    n_parallel_envs: 10
+    n_grad_steps: 4
+    eval_grad_steps:  "0 1 2 3 4"
+    batch_timesteps: 64
+    # MAML params
+    alpha: 1.0  # or 0.5
+    inner_alg: PPO
+    inner_optimizer: SGD
+#    beta: 0.008
+    beta: 0.005
+    meta_alg: PPO
+    meta_optimizer: Adam
+  - run_mode: e_maml
+    env_name: "MediumWorld-v0"
+    log_directory: /mnt/slab/krypton/machine_learning/grid-world/medium/{time:%Y-%m-%d}/{time:%H%M%S.%f}-e-maml/
+    n_epochs: 1300
+    n_tasks: 10
+    n_parallel_envs: 10
+    n_grad_steps: 4
+    eval_grad_steps:  "0 1 2 3 4"
+    batch_timesteps: 64
+    # MAML params
+    alpha: 1.0  # or 0.5
+    inner_alg: PPO
+    inner_optimizer: SGD
+#    beta: 0.008
+    beta: 0.005
+    meta_alg: PPO
+    meta_optimizer: Adam

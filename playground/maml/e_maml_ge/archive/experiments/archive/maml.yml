@@ -1,0 +1,181 @@
+%YAML 1.2
+---
+config:
+  # 8 gives better usage of i7 CPU.
+  max_concurrent: 1
+env:
+  DISPLAY: ":1"
+  PYTHONPATH: $HOME/machine_learning/meta_learning_project/packages
+run: |
+  {env} python e_maml_ge.py {args}
+default_args:
+  # experiment parameters
+  run_mode: "maml" # one of ['maml", "e_maml", "baselines"]
+  log_directory: "../test_runs/maml-tweak/{time:%Y-%m-%d}/{time:%H%M%S.%f}/"
+  env_name: HalfCheetah-v1
+  start_seed: 42
+  render: false
+  eval_plot_interval: 1 # "interval for plotting the loss"
+  eval_save_interval: 50 # "interval for saving plot figure"
+  # Training Parameters
+  n_tasks: 40
+  n_grad_steps: 1
+  n_epochs: 2000
+  n_parallel_envs: 8
+  env_horizon_max_steps: 128
+  n_updates_per_batch: 16
+  alpha: 0.05
+  beta: 0.05
+  # model parameters
+  first_order: false
+  inner_alg: PPO
+  inner_optimizer: Adam
+  meta_alg: PPO
+  eval_grad_steps:  "0 1"
+  num_grad_steps: 1
+  # Model Options (PPO)
+  vf_coef: 0.5
+  ent_coef: 0.0
+  max_grad_norm: 0.5
+  clip_range: 0.2
+  # GAE parameters
+  gamma: 0.99
+  lam: 0.95
+batch_args: # use good typing convention here
+  - run_mode: maml
+    env_name: "HalfCheetahGoalVel-v0"
+    vf_coef: 0.5 # idea is to use this to reduce the update on the value function
+    eval_plot_interval: 1
+    n_epochs: 500
+    n_tasks: 10
+    n_grad_steps: 4
+    n_parallel_envs: 8
+    env_horizon_max_steps: 64
+    # MAML params
+    alpha: 0.0001
+    beta: 0.03
+    inner_alg: PPO
+    inner_optimizer: Adam
+    meta_alg: PPO
+    meta_optimizer: Adam
+# todo: use PPO as the inner algorithm
+#  - run_mode: maml
+#    vf_coef: 0.03125 # idea is to use this to reduce the update on the value function
+#    eval_plot_interval: 1
+#    n_epochs: 500
+#    n_tasks: 32
+#    n_grad_steps: 1
+#    n_parallel_envs: 1
+#    env_horizon_max_steps: 64
+#    # MAML params
+#    alpha: 0.0001
+#    beta: 0.0003
+#    inner_alg: VPG
+#    inner_optimizer: SGD
+#    meta_alg: PPO
+#    meta_optimizer: Adam
+#  - run_mode: maml
+#    vf_coef: 0.03125 # idea is to use this to reduce the update on the value function
+#    eval_plot_interval: 1
+#    n_epochs: 500
+#    n_tasks: 32
+#    n_grad_steps: 1
+#    n_parallel_envs: 1
+#    env_horizon_max_steps: 64
+#    # MAML params
+#    alpha: 0.0001
+#    beta: 0.0003
+#    inner_alg: VPG
+#    inner_optimizer: SGD
+#    meta_alg: PPO
+#    meta_optimizer: Adam
+#  - run_mode: maml
+#    vf_coef: 0.03125 # idea is to use this to reduce the update on the value function
+#    eval_plot_interval: 1
+#    n_epochs: 500
+#    n_tasks: 32
+#    n_grad_steps: 1
+#    n_parallel_envs: 1
+#    env_horizon_max_steps: 64
+#    # MAML params
+#    alpha: 0.0001
+#    beta: 0.0003
+#    inner_alg: VPG
+#    inner_optimizer: SGD
+#    meta_alg: PPO
+#    meta_optimizer: Adam
+#  - run_mode: maml
+#    vf_coef: 0.03125 # idea is to use this to reduce the update on the value function
+#    eval_plot_interval: 1
+#    n_epochs: 500
+#    n_tasks: 32
+#    n_grad_steps: 1
+#    n_parallel_envs: 1
+#    env_horizon_max_steps: 64
+#    # MAML params
+#    alpha: 0.0001
+#    beta: 0.0003
+#    inner_alg: VPG
+#    inner_optimizer: SGD
+#    meta_alg: PPO
+#    meta_optimizer: Adam
+#  - run_mode: e_maml
+#    vf_coef: 0.03125 # idea is to use this to reduce the update on the value function
+#    eval_plot_interval: 1
+#    n_epochs: 500
+#    n_tasks: 32
+#    n_grad_steps: 1
+#    n_parallel_envs: 1
+#    env_horizon_max_steps: 64
+#    # MAML params
+#    alpha: 0.0001
+#    beta: 0.0003
+#    inner_alg: VPG
+#    inner_optimizer: SGD
+#    meta_alg: PPO
+#    meta_optimizer: Adam
+#  - run_mode: e_maml
+#    vf_coef: 0.03125 # idea is to use this to reduce the update on the value function
+#    eval_plot_interval: 1
+#    n_epochs: 500
+#    n_tasks: 32
+#    n_grad_steps: 1
+#    n_parallel_envs: 1
+#    env_horizon_max_steps: 64
+#    # MAML params
+#    alpha: 0.0001
+#    beta: 0.0003
+#    inner_alg: VPG
+#    inner_optimizer: SGD
+#    meta_alg: PPO
+#    meta_optimizer: Adam
+#  - run_mode: e_maml
+#    vf_coef: 0.03125 # idea is to use this to reduce the update on the value function
+#    eval_plot_interval: 1
+#    n_epochs: 500
+#    n_tasks: 32
+#    n_grad_steps: 1
+#    n_parallel_envs: 1
+#    env_horizon_max_steps: 64
+#    # MAML params
+#    alpha: 0.0001
+#    beta: 0.0003
+#    inner_alg: VPG
+#    inner_optimizer: SGD
+#    meta_alg: PPO
+#    meta_optimizer: Adam
+#  - run_mode: e_maml
+#    vf_coef: 0.03125 # idea is to use this to reduce the update on the value function
+#    eval_plot_interval: 1
+#    n_epochs: 500
+#    n_tasks: 32
+#    n_grad_steps: 1
+#    n_parallel_envs: 1
+#    env_horizon_max_steps: 64
+#    # MAML params
+#    alpha: 0.0001
+#    beta: 0.0003
+#    inner_alg: VPG
+#    inner_optimizer: SGD
+#    meta_alg: PPO
+#    meta_optimizer: Adam

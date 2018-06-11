@@ -1,4 +1,4 @@
-from playground.maml.maml_torch.maml_torch import G
+from playground.maml.maml_torch.archive.maml_torch import G
 
 # experiment 1.
 params = []

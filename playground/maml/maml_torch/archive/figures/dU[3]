@@ -1,0 +1,5 @@
+digraph {
+	graph [size="12,12"]
+	node [align=left color=white fillcolor=transparent fontname=Monospace fontsize=12 height=0.3 labeldistance=5 ranksep=0.1 shape=rect style=filled]
+	4786824648 [label="dU[3] (40)" fillcolor="#23aaff" fontcolor=white shape=Mrecord]
+}

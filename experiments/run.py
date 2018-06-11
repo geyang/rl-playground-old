@@ -1,5 +1,6 @@
 from experiments.jaynes_call import rcall
 from params_proto import cli_parse
+from waterbear import Bear
 
 
 @cli_parse
@@ -24,9 +25,11 @@ test_launch.Args = Args
 
 if __name__ == "__main__":
     # launch = test_launch
-    from playground.maml.maml_torch.maml_torch import launch
+    from playground.maml.maml_torch.experiments.out_of_distribution import launch_training
 
     # the location of the log server
+    from datetime import datetime
+
     launch.Args.log_dir = "http://54.71.92.65:8081"
 
     ips = ["52.88.91.243"]
@@ -42,18 +45,28 @@ if __name__ == "__main__":
               )
 
     # These are the k steps from the dataset
-    _mode = launch.Args.mode or "ssh"
+    _mode = "spot"
+    _price = 0.472
+    _image = "ufoym/deepo:cpu"
+    _use_gpu = False
+    _instance_type = "c4.8xlarge"
+
+    _ = launch.Args
+    _ext = f"{_instance_type}-{_price}" if _mode == "spot" else f"ssh"
+    now = datetime.now()
+    _.log_prefix = f"{now:%Y-%m-%d}/maml_torch/out-of-distribution-beta_{_.beta}-{_ext}"
+
     J.run(launch, **vars(launch.Args),
-          _log_dir=f"/tmp/jaynes-runs/{launch.Args.log_prefix}",
+          _log_dir=f"/tmp/jaynes-runs/{_.log_prefix}",
           _instance_prefix=launch.Args.log_prefix,
           _mode=_mode,
-          _instance_type=launch.Args.instance_type or "p2.xlarge",
-          _spot_price=launch.Args.spot_price or None,
+          _spot_price=_price,
+          _instance_type=_instance_type or "p2.xlarge",
           _ip=SSH_IP,
           _as_daemon=True,
           # we can probably absorb all of these into just the launch function! Muhaha
-          _docker_image=launch.Args.docker_image or "python:3.6",
-          _use_gpu=launch.Args.use_gpu if launch.Args.use_gpu is not None else False,
+          _docker_image=_image,
+          _use_gpu=_use_gpu,
           _startup_script=(
               "echo `which python3`",
               "python3 -V",

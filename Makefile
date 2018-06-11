@@ -5,6 +5,8 @@ author=$(Ge Yang)
 author_email=$(yangge1987@gmail.com)
 
 # notes on python packaging: http://python-packaging.readthedocs.io/en/latest/minimal.html
+conda-env:
+	conda env create -f ./playground.yml
 default: ;
 wheel:
 	rm -rf dist

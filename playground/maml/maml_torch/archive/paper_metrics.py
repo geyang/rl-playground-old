@@ -1,6 +1,5 @@
 import copy
 from collections import defaultdict
-import matplotlib.pyplot as plt
 import numpy as np
 import sys
 from tqdm import trange, tnrange
@@ -23,16 +22,20 @@ def _sgd(model, xs, ys, lr):
 
 LINE_STYLES = ['-', '--', '-.', ':']
 
+
 def comp_ys(xs, model):
     # convert to torch.float32 (single precision) to work with weight matrices.
     return model(xs.float().unsqueeze(dim=-1))
 
 
 def comp_loss(xs, ys, model):
-    _ys = comp_ys(xs, model)
-    # convert to torch.float32 (single precision) to work with weight matrices.
-    loss = model.criteria(_ys, ys.float().unsqueeze(dim=-1))
-    return loss, _ys
+    if hasattr(model, 'is_recurrent') and model.is_recurrent:
+        raise NotImplementedError('recurrent unit has not been implemented -- Ge')
+    else:
+        _ys = comp_ys(xs, model)
+        # convert to torch.float32 (single precision) to work with weight matrices.
+        loss = model.criteria(_ys, ys.float().unsqueeze(dim=-1))
+        return loss, _ys
 
 
 def fine_tuning_statistics(Problem, model, runs, k=5, n_steps=10, k_eval=100):
@@ -72,6 +75,7 @@ def smooth(x, window_length=41, polyorder=3):
 
 
 def monit_loss(cache, clear=True, label='loss', color='grey', window=True):
+    import matplotlib.pyplot as plt
     if clear:
         plt.cla()
     loss = np.array(cache)
@@ -87,6 +91,7 @@ from scipy import signal
 
 
 def monit_batch_loss(cache, clear=True, label='loss', color='red', window=True):
+    import matplotlib.pyplot as plt
     if clear:
         plt.cla()
     plt.title('loss over time')
@@ -106,6 +111,7 @@ def monit_batch_loss(cache, clear=True, label='loss', color='red', window=True):
 
 
 def plot_fit(title, problem, model, k_shot=5, n_steps=10):
+    import matplotlib.pyplot as plt
     model = copy.deepcopy(model)
     plt.cla()
     plt.title(title)
@@ -139,6 +145,7 @@ def plot_fit(title, problem, model, k_shot=5, n_steps=10):
 
 
 def plot_loss_vs_fine_tuning(fig, title, problem, model, k=5, n_steps=10):
+    import matplotlib.pyplot as plt
     model = copy.deepcopy(model)
     ax = fig.add_subplot(121)
     plt.cla()
