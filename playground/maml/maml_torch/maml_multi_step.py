@@ -15,6 +15,254 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 
 
+class FunctionalGRU:
+    h0 = None
+    is_recurrent = True
+
+    def __init__(self, input_n, output_n, hidden_n=None):
+        bias_n = 10
+        input_n += bias_n
+        self.input_n = input_n
+        self.output_n = output_n
+        self.hidden_n = hidden_n or output_n
+        self.params = Bear(
+            bias_var=Variable(t.empty(1, bias_n, dtype=t.double), requires_grad=True),
+            # combine the weights for different gates
+            w_ir=Variable(t.DoubleTensor(3 * hidden_n, input_n), requires_grad=True),
+            b_ir=Variable(t.DoubleTensor(3 * hidden_n), requires_grad=True),
+            w_hh=Variable(t.DoubleTensor(3 * hidden_n, hidden_n), requires_grad=True),
+            b_hh=Variable(t.DoubleTensor(3 * hidden_n), requires_grad=True),
+            w_out=Variable(t.DoubleTensor(output_n, hidden_n), requires_grad=True),
+            b_out=Variable(t.DoubleTensor(output_n), requires_grad=True),
+        )
+        self.reset_parameters()
+
+    criteria = t.nn.MSELoss()
+
+    def state_dict(self):
+        return vars(self.params)
+
+    def reset_parameters(self):
+        for name, p in self.named_parameters():
+            if name.startswith('w') or name.startswith('u'):
+                init.xavier_normal_(p)
+                print(name, 'xavier', f'max: {p.max().item():.2f}, min: {p.min().item():.2f}')
+            else:
+                init.uniform_(p)
+                print(name, 'uniform', f'max: {p.max().item():.2f}, min: {p.min().item():.2f}')
+
+    def h0_init(self):
+        if self.h0 is None:
+            # LSTM as h and c concatenated.
+            self.h0 = t.zeros(1, self.hidden_n, dtype=t.double)
+        return self.h0
+
+    def step_forward(self, x, h=None):
+        """run the forward inference by one timestep"""
+        params = self.params
+        if h is None:
+            h = t.zeros(self.hidden_n).unsqueeze(-1)
+        _x = t.cat([x, params.bias_var.repeat(x.shape[0], 1)], dim=-1)
+        s = _x @ params.w_ih.t() + params.b_ih + h @ params.w_hh.t() + params.b_hh
+        _ = F.sigmoid(s[:, :self.hidden_n * 2])
+        r = _[:, :self.hidden_n]
+        z = _[:, self.hidden_n:]
+        n = F.tanh(s[:, self.hidden_n * 2:])
+        h = (1 - z) * n + z * h
+        # note: only works with Shape(n,) inputs. No squeezing
+        # to respect the signature (y, h).
+        return F.tanh(h @ params.w_out.t() + params.b_out), h
+
+    def __call__(self, x, h0):
+        """
+
+        :param x: Size(seq_len, batch, input_size)
+        :param h0: Size(batch, hidden_size)
+        :return: Size(seq_len, batch, output_size)
+        """
+        assert len(x.shape) >= 3, "x need to be of the shape (seq_len, batch, input_size)"
+        assert len(h0.shape) >= 2, "h need to be of the shape (batch, input_size)"
+        h, ys = h0, []
+        for i, x_ in enumerate(x):
+            y, h = self.step_forward(x_, h)
+            ys.append(y.unsqueeze(0))
+        return t.cat(ys), h
+
+    def parameters(self):
+        return (v for k, v in self.params.items())
+
+    def named_parameters(self):
+        return self.params.items()
+
+
+class FunctionalAutoGRU(FunctionalGRU):
+    is_autoregressive = True
+    is_eval = False
+
+    def eval(self):
+        self.is_eval = True
+
+    def train(self):
+        self.is_eval = False
+
+    def __init__(self, input_n, output_n, hidden_n):
+        super(FunctionalAutoGRU, self).__init__(input_n + output_n, output_n, hidden_n)
+
+    # noinspection PyMethodOverriding
+    def step_forward(self, x, h, y_tm):
+        _ = t.cat([x, y_tm], dim=-1)
+        return super(FunctionalAutoGRU, self).step_forward(_, h)
+
+    # noinspection PyMethodOverriding
+    def __call__(self, x, h0, label=None):
+        """
+
+        :param x: Size(seq_len, batch, input_size)
+        :param h0: Size(batch, hidden_size)
+        :param y: Size(seq_len, batch, output_size) or None
+        :return: Size(seq_len, batch, output_size)
+        """
+        assert len(x.shape) >= 3, "x need to be of the shape (seq_len, batch, input_size)"
+        assert len(h0.shape) >= 2, "h need to be of the shape (batch, input_size)"
+        # y_0 == 0 is the unique starting token.
+        y_t, h, ys = t.zeros(1, 1, dtype=t.double), h0, []
+        for i, x_t in enumerate(x):
+            # teacher forcing: always use label data
+            if self.is_eval or label is None or i == 0:
+                y_t, h = self.step_forward(x_t, h, y_t)
+            else:
+                y_t, h = self.step_forward(x_t, h, label[i - 1])
+            ys.append(y_t.unsqueeze(0))
+        return t.cat(ys), h
+
+
+class FunctionalLSTM:
+    h0 = None
+    is_recurrent = True
+
+    def __init__(self, input_n, output_n, hidden_n=None):
+        bias_n = 10
+        input_n += bias_n
+        self.input_n = input_n
+        self.output_n = output_n
+        self.hidden_n = hidden_n or output_n
+        self.params = Bear(
+            bias_var=Variable(t.empty(1, bias_n, dtype=t.double), requires_grad=True),
+            # combine the weights for different gates
+            w_ih=Variable(t.DoubleTensor(4 * hidden_n, input_n), requires_grad=True),
+            b_ih=Variable(t.DoubleTensor(4 * hidden_n), requires_grad=True),
+            w_hh=Variable(t.DoubleTensor(4 * hidden_n, hidden_n), requires_grad=True),
+            b_hh=Variable(t.DoubleTensor(4 * hidden_n), requires_grad=True),
+            w_out=Variable(t.DoubleTensor(output_n, hidden_n), requires_grad=True),
+            b_out=Variable(t.DoubleTensor(output_n), requires_grad=True),
+        )
+        self.reset_parameters()
+
+    criteria = t.nn.MSELoss()
+
+    def state_dict(self):
+        return vars(self.params)
+
+    def reset_parameters(self):
+        for name, p in self.named_parameters():
+            if name.startswith('w') or name.startswith('u'):
+                init.xavier_normal_(p)
+                print(name, 'xavier', f'max: {p.max().item():.2f}, min: {p.min().item():.2f}')
+            else:
+                init.uniform_(p)
+                print(name, 'uniform', f'max: {p.max().item():.2f}, min: {p.min().item():.2f}')
+
+    def h0_init(self):
+        if self.h0 is None:
+            # LSTM as h and c concatenated.
+            self.h0 = t.zeros(1, self.hidden_n * 2, dtype=t.double)
+        return self.h0
+
+    def step_forward(self, x, hc=None):
+        """run the forward inference by one timestep"""
+        params = self.params
+        if hc is None:
+            h = t.zeros(self.hidden_n).unsqueeze(-1)
+            c = t.zeros(self.hidden_n).unsqueeze(-1)
+        else:
+            h = hc[:, :self.hidden_n]
+            c = hc[:, self.hidden_n:]
+        _x = t.cat([x, params.bias_var.repeat(x.shape[0], 1)], dim=-1)
+        z = _x @ params.w_ih.t() + params.b_ih + h @ params.w_hh.t() + params.b_hh
+        a = F.sigmoid(z[:, :self.hidden_n * 3])
+        i = a[:, :self.hidden_n]
+        f = a[:, self.hidden_n:self.hidden_n * 2]
+        o = a[:, self.hidden_n * 2:]
+        g = F.tanh(z[:, self.hidden_n * 3:self.hidden_n * 4])
+        c = c * f + g * i
+        h = F.tanh(c) * o
+        # note: only works with Shape(n,) inputs. No squeezing
+        # to respect the signature (y, h).
+        return F.tanh(h @ params.w_out.t() + params.b_out), t.cat([h, c], dim=-1)
+
+    def __call__(self, x, h0):
+        """
+
+        :param x: Size(seq_len, batch, input_size)
+        :param h0: Size(batch, hidden_size)
+        :return: Size(seq_len, batch, output_size)
+        """
+        assert len(x.shape) >= 3, "x need to be of the shape (seq_len, batch, input_size)"
+        assert len(h0.shape) >= 2, "h need to be of the shape (batch, input_size)"
+        h, ys = h0, []
+        for i, x_ in enumerate(x):
+            y, h = self.step_forward(x_, h)
+            ys.append(y.unsqueeze(0))
+        return t.cat(ys), h
+
+    def parameters(self):
+        return (v for k, v in self.params.items())
+
+    def named_parameters(self):
+        return self.params.items()
+
+
+class FunctionalAutoLSTM(FunctionalLSTM):
+    is_autoregressive = True
+    is_eval = False
+
+    def eval(self):
+        self.is_eval = True
+
+    def train(self):
+        self.is_eval = False
+
+    def __init__(self, input_n, output_n, hidden_n):
+        super(FunctionalAutoLSTM, self).__init__(input_n + output_n, output_n, hidden_n)
+
+    # noinspection PyMethodOverriding
+    def step_forward(self, x, h, y_tm):
+        _ = t.cat([x, y_tm], dim=-1)
+        return super(FunctionalAutoLSTM, self).step_forward(_, h)
+
+    # noinspection PyMethodOverriding
+    def __call__(self, x, h0, label=None):
+        """
+
+        :param x: Size(seq_len, batch, input_size)
+        :param h0: Size(batch, hidden_size)
+        :param y: Size(seq_len, batch, output_size) or None
+        :return: Size(seq_len, batch, output_size)
+        """
+        assert len(x.shape) >= 3, "x need to be of the shape (seq_len, batch, input_size)"
+        assert len(h0.shape) >= 2, "h need to be of the shape (batch, input_size)"
+        # y_0 == 0 is the unique starting token.
+        y_t, h, ys = t.zeros(1, 1, dtype=t.double), h0, []
+        for i, x_t in enumerate(x):
+            # teacher forcing: always use label data
+            if self.is_eval or label is None or i == 0:
+                y_t, h = self.step_forward(x_t, h, y_t)
+            else:
+                y_t, h = self.step_forward(x_t, h, label[i - 1])
+            ys.append(y_t.unsqueeze(0))
+        return t.cat(ys), h
+
+
 class FunctionalRNN:
     h0 = None
     is_recurrent = True
@@ -282,11 +530,12 @@ def reptile(model=None, test_fn=None):
                     ys = ys.squeeze(-1)  # ys:Size(5, batch_n:1, 1).
                 else:
                     ys = model(xs.unsqueeze(-1))
+                    ht = None
                 loss = mse(ys, labels.unsqueeze(-1))
                 with t.no_grad():
                     logger.log_keyvalue(ep_ind, f"{task_ind}-grad-{grad_ind}-loss", loss.item(), silent=_silent)
                     if callable(test_fn) and ep_ind % G.test_interval == 0 and grad_ind in G.test_grad_steps:
-                        test_fn(model, task, task_id=task_ind, epoch=ep_ind, grad_step=grad_ind)
+                        test_fn(model, task, task_id=task_ind, epoch=ep_ind, grad_step=grad_ind, h0=ht, silent=_silent)
                 dps = t.autograd.grad(loss, model.parameters())
                 with t.no_grad():
                     for (name, p), dp in zip(model.named_parameters(), dps):
@@ -295,14 +544,35 @@ def reptile(model=None, test_fn=None):
 
             grad_ind = G.n_gradient_steps
             with t.no_grad():
+                # domain adaptation
+                if hasattr(model, "is_autoregressive") and model.is_autoregressive:
+                    h0 = model.h0_init()
+                    ys, ht = model(xs.view(G.k_shot, 1, 1), h0, labels.view(G.k_shot, 1, 1))
+                    ys = ys.squeeze(-1)  # ys:Size(5, batch_n:1, 1).
+                elif hasattr(model, "is_recurrent") and model.is_recurrent:
+                    h0 = model.h0_init()
+                    ys, ht = model(xs.view(G.k_shot, 1, 1), h0)
+                    ys = ys.squeeze(-1)  # ys:Size(5, batch_n:1, 1).
+                else:
+                    ys = model(xs.unsqueeze(-1))
+                    ht = None
+                loss = mse(ys, labels.unsqueeze(-1))
                 logger.log_keyvalue(ep_ind, f"{task_ind}-grad-{grad_ind}-loss", loss.item(), silent=_silent)
+
                 if callable(test_fn) and \
                         ep_ind % G.test_interval == 0 and grad_ind in G.test_grad_steps:
-                    test_fn(model, task, task_id=task_ind, epoch=ep_ind, grad_step=grad_ind)
-            # Compute RAPTILE 1st-order gradient
+                    test_fn(model, task, task_id=task_ind, epoch=ep_ind, grad_step=grad_ind, h0=ht, silent=_silent)
+
+            # Compute REPTILE 1st-order gradient
             with t.no_grad():
                 for name, p in original_ps.items():
-                    p.grad = (0 if p.grad is None else p.grad) + (p - model.params[name]) / G.task_batch_n
+                    # let's do the division at the end.
+                    p.grad = (0 if p.grad is None else p.grad) + (p - model.params[name])  # / G.task_batch_n
+
+        with t.no_grad():
+            for name, p in original_ps.items():
+                # let's do the division at the end.
+                p.grad /= G.task_batch_n
 
         model.params.update(original_ps)
         meta_optimizer.step()
@@ -314,12 +584,12 @@ def reptile(model=None, test_fn=None):
     logger.flush()
 
 
-def standard_sine_test(model, task, task_id, epoch, grad_step, silent=False):
+def standard_sine_test(model, task, task_id, epoch, grad_step, silent=False, h0=None):
     with t.no_grad():
         xs, labels = t.DoubleTensor(task.samples(G.k_shot))
         # xs, labels = t.DoubleTensor(task.samples(G.k_shot))
         if hasattr(model, "is_recurrent") and model.is_recurrent:
-            h0 = model.h0_init()
+            h0 = model.h0_init() if h0 is None else h0
             ys, ht = model(xs.view(G.k_shot, 1, 1), h0)
             ys = ys.squeeze(-1)  # ys:Size(5, batch_n:1, 1).
         else:
@@ -373,12 +643,13 @@ def maml(model=None, test_fn=None):
                     ys = ys.squeeze(-1)  # ys:Size[5, batch_n: 1, 1]
                 else:
                     ys = model(xs.unsqueeze(-1))
+                    ht = None
 
                 loss = mse(ys, labels.unsqueeze(-1))
                 logger.log_keyvalue(ep_ind, f"{task_ind}-grad-{grad_ind}-loss", loss.item(), silent=_silent)
                 if callable(test_fn) and \
                         ep_ind % G.test_interval == 0 and grad_ind in G.test_grad_steps:
-                    test_fn(model, task=task, task_id=task_ind, epoch=ep_ind, grad_step=grad_ind, silent=_silent)
+                    test_fn(model, task=task, task_id=task_ind, epoch=ep_ind, grad_step=grad_ind, silent=_silent, h0=ht)
                 dps = t.autograd.grad(loss, model.parameters(), create_graph=True, retain_graph=True)
                 # 1. update parameters, use updated theta'.
                 # 2. run forward, get direct gradient to update the network
@@ -397,16 +668,22 @@ def maml(model=None, test_fn=None):
                 ys = ys.squeeze(-1)  # ys:Size[5, batch_n: 1, 1]
             else:
                 ys = model(xs.unsqueeze(-1))
-
+                ht = None
             loss = mse(ys, labels.unsqueeze(-1))
             logger.log_keyvalue(ep_ind, f"{task_ind}-grad-{grad_ind}-loss", loss.item(), silent=_silent)
+
             if callable(test_fn) and \
                     ep_ind % G.test_interval == 0 and grad_ind in G.test_grad_steps:
-                test_fn(model, task=task, task_id=task_ind, epoch=ep_ind, grad_step=grad_ind, silent=_silent)
+                test_fn(model, task=task, task_id=task_ind, epoch=ep_ind, grad_step=grad_ind, silent=_silent, h0=ht)
             meta_dps = t.autograd.grad(loss, original_ps.values())
             with t.no_grad():
                 for (name, p), meta_dp in zip(original_ps.items(), meta_dps):
-                    p.grad = (0 if p.grad is None else p.grad) + meta_dp / G.task_batch_n
+                    p.grad = (0 if p.grad is None else p.grad) + meta_dp
+
+        # normalize the gradient.
+        with t.no_grad():
+            for (name, p) in original_ps.items():
+                p.grad /= G.task_batch_n
 
         model.params.update(original_ps)
         meta_optimizer.step()
@@ -506,10 +783,72 @@ def launch_reptile_auto_rnn(log_prefix=None, **_G):
     reptile(model=auto_rnn, test_fn=standard_sine_test)
 
 
+def launch_reptile_lstm(log_prefix=None, **_G):
+    G.log_prefix = log_prefix or f'{now:%Y-%m-%d}/debug-maml-baselines/sinusoid-reptile-lstm'
+    G.update(_G)
+
+    logger.configure(log_directory=G.log_dir, prefix=G.log_prefix)
+    logger.log_params(G=vars(G))
+
+    np.random.seed(G.seed)
+    t.manual_seed(G.seed)
+    t.cuda.manual_seed(G.seed)
+
+    auto_rnn = FunctionalLSTM(1, 1, 10)
+    reptile(model=auto_rnn, test_fn=standard_sine_test)
+
+
+def launch_maml_lstm(log_prefix=None, **_G):
+    G.log_prefix = log_prefix or f'{now:%Y-%m-%d}/debug-maml-baselines/sinusoid-maml-lstm'
+    G.update(_G)
+
+    logger.configure(log_directory=G.log_dir, prefix=G.log_prefix)
+    logger.log_params(G=vars(G))
+
+    np.random.seed(G.seed)
+    t.manual_seed(G.seed)
+    t.cuda.manual_seed(G.seed)
+
+    auto_rnn = FunctionalLSTM(1, 1, 10)
+    maml(model=auto_rnn, test_fn=standard_sine_test)
+
+
+def launch_reptile_auto_lstm(log_prefix=None, **_G):
+    G.log_prefix = log_prefix or f'{now:%Y-%m-%d}/debug-maml-baselines/sinusoid-reptile-auto-lstm'
+    G.update(_G)
+
+    logger.configure(log_directory=G.log_dir, prefix=G.log_prefix)
+    logger.log_params(G=vars(G))
+
+    np.random.seed(G.seed)
+    t.manual_seed(G.seed)
+    t.cuda.manual_seed(G.seed)
+
+    auto_rnn = FunctionalAutoLSTM(1, 1, 10)
+    reptile(model=auto_rnn, test_fn=standard_sine_test)
+
+
+def launch_maml_auto_lstm(log_prefix=None, **_G):
+    G.log_prefix = log_prefix or f'{now:%Y-%m-%d}/debug-maml-baselines/sinusoid-maml-auto-lstm'
+    G.update(_G)
+
+    logger.configure(log_directory=G.log_dir, prefix=G.log_prefix)
+    logger.log_params(G=vars(G))
+
+    np.random.seed(G.seed)
+    t.manual_seed(G.seed)
+    t.cuda.manual_seed(G.seed)
+
+    auto_rnn = FunctionalAutoLSTM(1, 1, 10)
+    maml(model=auto_rnn, test_fn=standard_sine_test)
+
+
 if __name__ == "__main__":
     # sgd_baseline()
-    launch_maml_mlp(log_prefix='local-debug-double')
-    # launch_maml_auto_rnn(log_prefix='local-debug')
-    # launch_reptile_auto_rnn(log_prefix='local-debug-reptile')
+    # launch_maml_mlp(log_prefix='local-debug-double')
+    # launch_maml_auto_rnn(log_prefix='local-debug-auto-rnn')
+    # launch_reptile_auto_rnn(log_prefix='local-debug-reptile-auto-rnn')
+    # launch_maml_lstm(log_prefix='local-debug-maml-lstm')
+    launch_maml_auto_lstm(log_prefix='local-debug-maml-lstm')
     # launch_reptile_mlp(log_prefix='local-debug')
     # launch_rnn()
