@@ -16,6 +16,9 @@ from torch.autograd import Variable
 
 
 class FunctionalGRU:
+    """
+    reference: https://pytorch.org/docs/stable/nn.html?highlight=lstm#torch.nn.GRUCell
+    """
     h0 = None
     is_recurrent = True
 
@@ -843,12 +846,72 @@ def launch_maml_auto_lstm(log_prefix=None, **_G):
     maml(model=auto_rnn, test_fn=standard_sine_test)
 
 
+def launch_reptile_gru(log_prefix=None, **_G):
+    G.log_prefix = log_prefix or f'{now:%Y-%m-%d}/debug-maml-baselines/sinusoid-reptile-gru'
+    G.update(_G)
+
+    logger.configure(log_directory=G.log_dir, prefix=G.log_prefix)
+    logger.log_params(G=vars(G))
+
+    np.random.seed(G.seed)
+    t.manual_seed(G.seed)
+    t.cuda.manual_seed(G.seed)
+
+    auto_rnn = FunctionalGRU(1, 1, 10)
+    reptile(model=auto_rnn, test_fn=standard_sine_test)
+
+
+def launch_maml_gru(log_prefix=None, **_G):
+    G.log_prefix = log_prefix or f'{now:%Y-%m-%d}/debug-maml-baselines/sinusoid-maml-gru'
+    G.update(_G)
+
+    logger.configure(log_directory=G.log_dir, prefix=G.log_prefix)
+    logger.log_params(G=vars(G))
+
+    np.random.seed(G.seed)
+    t.manual_seed(G.seed)
+    t.cuda.manual_seed(G.seed)
+
+    auto_rnn = FunctionalGRU(1, 1, 10)
+    maml(model=auto_rnn, test_fn=standard_sine_test)
+
+
+def launch_reptile_auto_gru(log_prefix=None, **_G):
+    G.log_prefix = log_prefix or f'{now:%Y-%m-%d}/debug-maml-baselines/sinusoid-reptile-auto-gru'
+    G.update(_G)
+
+    logger.configure(log_directory=G.log_dir, prefix=G.log_prefix)
+    logger.log_params(G=vars(G))
+
+    np.random.seed(G.seed)
+    t.manual_seed(G.seed)
+    t.cuda.manual_seed(G.seed)
+
+    auto_rnn = FunctionalAutoGRU(1, 1, 10)
+    reptile(model=auto_rnn, test_fn=standard_sine_test)
+
+
+def launch_maml_auto_gru(log_prefix=None, **_G):
+    G.log_prefix = log_prefix or f'{now:%Y-%m-%d}/debug-maml-baselines/sinusoid-maml-auto-gru'
+    G.update(_G)
+
+    logger.configure(log_directory=G.log_dir, prefix=G.log_prefix)
+    logger.log_params(G=vars(G))
+
+    np.random.seed(G.seed)
+    t.manual_seed(G.seed)
+    t.cuda.manual_seed(G.seed)
+
+    auto_rnn = FunctionalAutoGRU(1, 1, 10)
+    maml(model=auto_rnn, test_fn=standard_sine_test)
+
+
 if __name__ == "__main__":
     # sgd_baseline()
     # launch_maml_mlp(log_prefix='local-debug-double')
     # launch_maml_auto_rnn(log_prefix='local-debug-auto-rnn')
     # launch_reptile_auto_rnn(log_prefix='local-debug-reptile-auto-rnn')
     # launch_maml_lstm(log_prefix='local-debug-maml-lstm')
-    launch_maml_auto_lstm(log_prefix='local-debug-maml-lstm')
+    launch_maml_gru(log_prefix='local-debug-maml-gru')
     # launch_reptile_mlp(log_prefix='local-debug')
     # launch_rnn()

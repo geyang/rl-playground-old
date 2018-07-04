@@ -24,7 +24,7 @@ def test_launch(**_Args):
 test_launch.Args = Args
 
 if __name__ == "__main__":
-    # launch = test_launch
+    # run = test_launch
     from playground.maml.maml_torch.experiments.out_of_distribution import launch_training
 
     # the location of the log server
@@ -64,7 +64,7 @@ if __name__ == "__main__":
           _instance_type=_instance_type or "p2.xlarge",
           _ip=SSH_IP,
           _as_daemon=True,
-          # we can probably absorb all of these into just the launch function! Muhaha
+          # we can probably absorb all of these into just the run function! Muhaha
           _docker_image=_image,
           _use_gpu=_use_gpu,
           _startup_script=(

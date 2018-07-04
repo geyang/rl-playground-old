@@ -4,6 +4,10 @@ SHELL:=/bin/bash -O extglob
 author=$(Ge Yang)
 author_email=$(yangge1987@gmail.com)
 
+.PHONY: build
+build:
+	docker-compose up --build
+
 # notes on python packaging: http://python-packaging.readthedocs.io/en/latest/minimal.html
 conda-env:
 	conda env create -f ./playground.yml

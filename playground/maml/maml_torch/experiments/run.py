@@ -63,7 +63,7 @@ if __name__ == "__main__":
               _instance_type=RunConfig.instance_type,
               _ip=SSH_IP,
               _as_daemon=True,
-              # we can probably absorb all of these into just the launch function! Muhaha
+              # we can probably absorb all of these into just the run function! Muhaha
               _docker_image=RunConfig.docker_image,
               _use_gpu=True,
               _startup_script=(

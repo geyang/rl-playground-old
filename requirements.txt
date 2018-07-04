@@ -1,0 +1,17 @@
+mpi4py
+scipy
+pandas
+mujoco-py
+gym
+baselines
+tqdm
+params-proto
+ml-logger
+moleskin
+jaynes
+waterbear
+dill
+# tensorflow is already installed with the base image ufoym/deepo
+# tensorflow-gpu>=1.4.0
+mock
+comet-ml

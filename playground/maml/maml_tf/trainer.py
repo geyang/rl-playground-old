@@ -1,6 +1,6 @@
 from collections import defaultdict
-
 from ml_logger import logger
+from comet_ml import Experiment
 from .e_maml_ge import E_MAML
 from .ge_policies import MlpPolicy
 from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
@@ -8,6 +8,9 @@ from .config import RUN, G, DEBUG, Reporting
 from .ge_utils import defaultlist
 import numpy as np
 from . import ppo, vpg
+
+
+comet_logger = Experiment(api_key="ajVBg1bSCmLJQ2aiCQu6Sp6aA", project_name='rl-playground/rl-maml')
 
 
 class Trainer(object):
@@ -138,7 +141,8 @@ class Trainer(object):
                     episode_r = avg_r * tasks.spec.max_episode_steps  # default horizon for HalfCheetah
 
                     if k in G.eval_grad_steps:
-                        batch_data['grad_{}_step_reward'.format(k)].append(avg_r if Reporting.report_mean else episode_r)
+                        batch_data['grad_{}_step_reward'.format(k)].append(
+                            avg_r if Reporting.report_mean else episode_r)
 
                     if episode_r < G.term_reward_threshold:
                         # todo: make this based on batch instead of a single episode.
@@ -190,7 +194,7 @@ class Trainer(object):
             for key in batch_data.keys():
                 reduced = np.array(batch_data[key]).mean()
                 logger.log_keyvalue(epoch_ind, key, reduced)
-
+                comet_logger.log_metric(key, reduced, step=epoch_ind)
 
             if should_test and test_tasks is not None:
                 maml.save_checkpoint()
@@ -199,12 +203,14 @@ class Trainer(object):
                 test_envs.reset()
                 p = self.sample_from_env(test_envs, maml.runner.policy, timestep_limit=test_tasks.spec.timestep_limit)
                 logger.log(epoch_ind, pre_update_rewards=np.mean(p['rewards']))
+                comet_logger.log_metric(pre_update_rewards, np.mean(p['rewards']), step=epoch_ind)
                 p = self.sample_from_env(test_envs, maml.runner.policy)
                 runner_feed_dict = \
                     path_to_feed_dict(inputs=maml.runner.inputs, paths=p, lr=alpha_lr, clip_range=clip_range)
                 maml.runner.model.run_optimize(feed_dict=runner_feed_dict)
                 p = self.sample_from_env(test_envs, maml.runner.policy, timestep_limit=test_tasks.spec.timestep_limit)
                 logger.log(epoch_ind, post_update_rewards=np.mean(p['rewards']))
+                comet_logger.log_metric(post_update_rewards, np.mean(p['rewards']), step=epoch_ind)
                 maml.load_checkpoint()
 
             if should_plot and callable(plot_fn):

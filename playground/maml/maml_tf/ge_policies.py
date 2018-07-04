@@ -2,7 +2,6 @@ import numpy as np
 import tensorflow as tf
 from gym import spaces
 
-import baselines.common.tf_util as U
 from baselines.a2c.utils import ortho_init
 from baselines.common.distributions import make_pdtype
 from .ge_utils import placeholders_from_variables

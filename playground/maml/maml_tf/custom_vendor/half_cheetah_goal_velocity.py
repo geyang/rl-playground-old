@@ -27,7 +27,7 @@ class HalfCheetahGoalVelEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         mujoco_env.MujocoEnv.__init__(self, 'half_cheetah.xml', 5)
         utils.EzPickle.__init__(self)
 
-    def _step(self, action):
+    def step(self, action):
         # xposbefore = self.model.data.qpos[0, 0]
         # change model api to work with Mujoco1.5
         xposbefore = self.data.qpos[0]
@@ -71,7 +71,7 @@ register(
     id='HalfCheetahGoalVel-v0',
     # todo: use module.sub_module:ClassName syntax to work with rcall and cloudpickle.
     # entry_point=lambda: HalfCheetahGoalVelEnv(),
-    entry_point="custom_vendor.half_cheetah_goal_velocity:HalfCheetahGoalVelEnv",
+    entry_point="playground.maml.maml_tf.custom_vendor.half_cheetah_goal_velocity:HalfCheetahGoalVelEnv",
     kwargs={},
     max_episode_steps=200,
     reward_threshold=4800.0,

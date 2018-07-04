@@ -43,21 +43,26 @@ def make_plot_fn(dash):
     return plot_fn
 
 
-def run_e_maml():
-    # print(config.RUN.log_directory)
-    # if config.G.run_mode == "e_maml":
-    #     print('{G.inner_alg} E-MAML'.format(G=config.G))
-    # elif config.G.run_mode == "maml":
-    #     print('{G.inner_alg} Vanilla MAML'.format(G=config.G))
+from playground.maml.maml_tf.trainer import comet_logger
+
+
+def run_e_maml(_G=None):
+    if _G is not None:
+        config.G.update(_G)
+
+    for k, v in [*vars(config.RUN).items(), *vars(config.G).items(), *vars(config.Reporting).items(),
+                 *vars(config.DEBUG).items()]:
+        comet_logger.log_parameter(k, v)
 
     # todo: let's take the control of the log director away from the train script. It should all be set from outside.
-    logger.configure(log_directory=config.RUN.log_directory, prefix=f"run_maml-{config.G.seed}")
+    logger.configure(log_directory=config.RUN.log_dir, prefix=f"run_maml-{config.G.seed}")
     logger.log_params(
         RUN=vars(config.RUN),
         G=vars(config.G),
         Reporting=vars(config.Reporting),
         DEBUG=vars(config.DEBUG)
     )
+    logger.log_file(__file__)
 
     import sys
     print(" ".join(sys.argv))
@@ -75,36 +80,34 @@ def run_e_maml():
                              max_steps=config.G.env_max_timesteps) if config.G.eval_test_interval \
         else ExitStack()
 
-    # with Dashboard(config.RUN.prefix, server=config.Reporting.plot_server,
-    #                port=config.Reporting.plot_server_port) as dash, U.single_threaded_session(), tasks, test_tasks:
-    with U.make_session(num_cpu=config.G.n_cpu), tasks, test_tasks:
-        # logger.on_dumpkvs(make_plot_fn(dash))
+    sess_config = tf.ConfigProto(log_device_placement=True)
+    with tf.Session(config=sess_config), tf.device('/gpu:0'), tasks, test_tasks:
+        # with U.make_session(num_cpu=config.G.n_cpu), tasks, test_tasks:
         maml = E_MAML(ob_space=tasks.envs.observation_space, act_space=tasks.envs.action_space)
-        summary = tf.summary.FileWriter(config.RUN.log_directory, tf.get_default_graph())
-        summary.flush()
+        comet_logger.set_model_graph(tf.get_default_graph())
         trainer = Trainer()
         U.initialize()
         trainer.train(tasks=tasks, maml=maml, test_tasks=test_tasks)
-        # logger.clear_callback()
+        logger.flush()
 
     tf.reset_default_graph()
 
 
-def launch(**_G):
-    from datetime import datetime
-    now = datetime.now()
-    config.G.update(_G)
-    config.RUN.log_dir = "http://54.71.92.65:8081"
-    config.RUN.log_prefix = f"ge_maml/{now:%Y-%m-%d}"
-
-
-if __name__ == '__main__':
+def launch(cuda_id: int = 0, **_G):
+    import os
     import traceback
+    os.environ['CUDA_VISIBLE_DEVICES'] = str(cuda_id)
 
     try:
-        run_e_maml()
+        run_e_maml(_G=_G)
     except Exception as e:
         tb = traceback.format_exc()
         logger.print(tb)
         logger.print(U.ALREADY_INITIALIZED)
         raise e
+
+
+if __name__ == '__main__':
+    ps = [1e-1, 1e-2, 1e-3, 1e-4]
+    i = 0
+    launch(cuda_id=(i + 1) % 4, alpha=ps[i])

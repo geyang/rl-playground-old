@@ -1,6 +1,4 @@
-import os
 import multiprocessing
-
 from params_proto import cli_parse
 
 ALLOWED_ALGS = "rl_algs.PPO", "rl_algs.VPG", "PPO", "VPG"
@@ -14,7 +12,7 @@ JOB_TEMPLATE = "{prefix}-{now:%Y-%m-%d}-{now:%H%M%S-%f}"
 
 @cli_parse
 class RUN:
-    log_directory = os.path.realpath("./runs")
+    log_dir = "http://54.71.92.65:8081"
     log_prefix = "maml-debug-run"
     prefix = "debug-run"  # type: "will be replaced by the run_time prefix during gce.call"
     job_name = JOB_TEMPLATE  # type: "template for the cloud jobs"
@@ -25,7 +23,8 @@ class RUN:
 class G:
     term_reward_threshold = -8000.0
     run_mode = "maml"  # type:  "Choose between maml and e_maml. Switches the loss function used for training"
-    env_name = 'HalfCheetah-v2'  # type:  "Name of the task environment"
+    # env_name = 'HalfCheetah-v2'  # type:  "Name of the task environment"
+    env_name = 'HalfCheetahGoalVel-v0'  # type:  "Name of the task environment"
     task_seed = 69  # type:  "seed to use in grid tasks"
     start_seed = 69  # type:  "seed for initialization of each game"
     test_task_seed = 69  # type:  "seed to use in grid tasks during test"
@@ -34,11 +33,12 @@ class G:
     n_cpu = 2 * multiprocessing.cpu_count() # type: "number of threads used"
     eval_test_interval = 0  # type:  "The interval to test the agent on a fixed set of tasks"
     # Note: (E_)MAML Training Parameters
-    n_tasks = 1  # type:  "40 for locomotion, 20 for 2D navigation ref:cbfinn"
+    n_tasks = 40  # type:  "40 for locomotion, 20 for 2D navigation ref:cbfinn"
     n_grad_steps = 1  # type:  "number of gradient descent steps for the worker." #TODO change back to 1
     n_epochs = 2000  # type:  "Number of epochs"
-    n_parallel_envs = 48  # type:  "Number of parallel envs in minibatch. The SubprocVecEnv batch_size."
-    batch_timesteps = 1000  # type:  "max_steps for each episode, used to set env._max_steps parameter"
+    # 40k per task (action, state) tuples, or 20k (per task) if you have 10/20 meta tasks
+    n_parallel_envs = 40  # type:  "Number of parallel envs in minibatch. The SubprocVecEnv batch_size."
+    batch_timesteps = 40  # type:  "max_steps for each episode, used to set env._max_steps parameter"
     env_max_timesteps = 0  # type:  "max_steps for each episode, used to set env._max_steps parameter. 0 to use gym default."
     single_sampling = 0  # type:  "flag for running a single sampling step. 1 ON, 0 OFF"
     # NOTE: NOT USED in maml or e_maml, only in baseline.
@@ -50,14 +50,14 @@ class G:
     eval_grad_steps = [0, 1]  # type:  "the gradient steps at which we evaluate the policy. Used to make pretty plots."
     # Note: MAML Options
     first_order = False  # type:  "Whether to stop gradient calculation during meta-gradient calculation"
-    alpha = 0.01  # type:  "worker learning rate. use 0.1 for first step, 0.05 afterward ref:cbfinn"
+    alpha = 0.0001  # type:  "worker learning rate. use 0.1 for first step, 0.05 afterward ref:cbfinn"
     beta = 0.005  # type:  "meta learning rate"
     inner_alg = "PPO"  # type:  '"PPO" or "VPG", "rl_algs.VPG" or "rl_algs.PPO" for rl_algs baselines'
     inner_optimizer = "SGD"  # type:  '"Adam" or "SGD"'
     meta_alg = "PPO"  # type:  "PPO or TRPO, TRPO is not yet implemented."
     meta_optimizer = "Adam"  # type:  '"Adam" or "SGD"'
     activation = "tanh"
-    hidden_size = 64  # type: "hidden size for the MLP policy"
+    hidden_size = 32  # type: "hidden size for the MLP policy"
     # Model options
     normalize_env = False  # type: "normalize the environment"
     vf_coef = 0.5  # type:  "loss weighing coefficient for the value function loss. with the VPG loss being 1.0"

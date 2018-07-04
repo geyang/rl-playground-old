@@ -13,6 +13,9 @@
 test-logs
 README
 
+# mujoco key
+mjkey.txt
+
 # User-specific stuff:
 .idea
 

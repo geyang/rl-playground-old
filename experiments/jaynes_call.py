@@ -8,7 +8,7 @@ def rcall(_verbose=False,
     """
     rcall, returns a jaynes runner object already having the current codebase uploaded to s3.
 
-    :param _code_name: The name for the tar ball. Be very careful when using a fixed name, b/c the ec2 launch is async.
+    :param _code_name: The name for the tar ball. Be very careful when using a fixed name, b/c the ec2 run is async.
     :param _s3_prefix: the s3 prefix starting with the protocol s3://bucket-name/prefix-1/prefix-2
     :param _code_root: default ../
     :type _excludes: full string patter for excluding directories

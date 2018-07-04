@@ -1,0 +1,9 @@
+version: '2.3'
+services:
+  main:
+    build: .
+    image: episodeyang/rl-playground
+    runtime: nvidia
+    volumes:
+      - .:/opt/project
+      

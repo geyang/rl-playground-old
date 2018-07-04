@@ -5,31 +5,12 @@ with open(path.join(path.abspath(path.dirname(__file__)), 'README'), encoding='u
     long_description = f.read()
 with open(path.join(path.abspath(path.dirname(__file__)), 'VERSION'), encoding='utf-8') as f:
     version = f.read()
+with open(path.join(path.abspath(path.dirname(__file__)), 'requirements.txt'), encoding='utf-8') as f:
+    dependencies = f.read()
 
 setup(name='playground',
       packages=['playground'],
-      install_requires=[
-          # 'gym[mujoco,atari,classic_control,robotics]',
-          'mujoco-py',
-          'gym',
-          'baselines',
-          'tqdm',
-          'params_proto',
-          'ml-logger',
-          'moleskin',
-          'jayes',
-          'waterbear',
-          # 'visdom',
-          # 'scipy',
-          # 'joblib',
-          # 'zmq',
-          # 'dill',
-          # 'progressbar2',
-          # 'mpi4py',
-          # 'cloudpickle',
-          # 'tensorflow>=1.4.0',
-          'click',
-      ],
+      install_requires=dependencies.split('\n'),
       description='A Playground for RL and Robotics Environments',
       long_description=long_description,
       author='Ge Yang',
