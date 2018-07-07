@@ -11,7 +11,5 @@ moleskin
 jaynes
 waterbear
 dill
-# tensorflow is already installed with the base image ufoym/deepo
-# tensorflow-gpu>=1.4.0
 mock
 comet-ml

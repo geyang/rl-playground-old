@@ -1,8 +1,14 @@
 FROM ufoym/deepo
 
+RUN apt-get -y update && apt-get -y install git wget python-dev python3-dev libopenmpi-dev python-pip zlib1g-dev cmake
 WORKDIR /srv
+# note: openai baseline depends on tensorflow. We force --no-deps to avoid this.
+# note: which means that we have to uninstall tensorflow (cpu-only version)
 ADD ./requirements.txt /srv/requirements.txt
 RUN pip install -r requirements.txt
+# remove the cpu-only version of tensorflow
+RUN yes | pip uninstall tensorflow tensorflow-gpu
+RUN yes | pip install tensorflow-gpu
 
 ENV LANG C.UTF-8
 

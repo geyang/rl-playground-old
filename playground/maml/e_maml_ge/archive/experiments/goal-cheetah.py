@@ -13,7 +13,7 @@ def experiment(args):
     config.G.hidden_size = 100
     config.G.first_order = True
     config.G.n_epochs = 800
-    # config.G.n_tasks = n_tasks
+    # config.G.n_graphs = n_graphs
     config.G.n_parallel_envs = 8
     config.G.batch_timesteps = 5
     # config.G.alpha = alpha

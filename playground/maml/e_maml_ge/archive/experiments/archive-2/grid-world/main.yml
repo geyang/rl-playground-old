@@ -49,7 +49,7 @@ batch_args: # use good typing convention here
 #    env_name: "HardWorld-v0"
 #    log_directory: /mnt/slab/krypton/machine_learning/grid-world/hard/{time:%Y-%m-%d}/{time:%H%M%S.%f}-vanilla-maml/
 #    n_epochs: 1300
-#    n_tasks: 10
+#    n_graphs: 10
 #    n_parallel_envs: 10
 #    n_grad_steps: 4
 #    eval_grad_steps:  "0 1 2 3 4"
@@ -66,7 +66,7 @@ batch_args: # use good typing convention here
 #    env_name: "HardWorld-v0"
 #    log_directory: /mnt/slab/krypton/machine_learning/grid-world/hard/{time:%Y-%m-%d}/{time:%H%M%S.%f}-e-maml/
 #    n_epochs: 1300
-#    n_tasks: 10
+#    n_graphs: 10
 #    n_parallel_envs: 10
 #    n_grad_steps: 4
 #    eval_grad_steps:  "0 1 2 3 4"
@@ -83,7 +83,7 @@ batch_args: # use good typing convention here
 #    env_name: "EasyWorld-v0"
 #    log_directory: /mnt/slab/krypton/machine_learning/grid-world/easy/{time:%Y-%m-%d}/{time:%H%M%S.%f}-vanilla-maml/
 #    n_epochs: 1300
-#    n_tasks: 10
+#    n_graphs: 10
 #    n_parallel_envs: 10
 #    n_grad_steps: 4
 #    eval_grad_steps:  "0 1 2 3 4"
@@ -100,7 +100,7 @@ batch_args: # use good typing convention here
 #    env_name: "EasyWorld-v0"
 #    log_directory: /mnt/slab/krypton/machine_learning/grid-world/easy/{time:%Y-%m-%d}/{time:%H%M%S.%f}-e-maml/
 #    n_epochs: 1300
-#    n_tasks: 10
+#    n_graphs: 10
 #    n_parallel_envs: 10
 #    n_grad_steps: 4
 #    eval_grad_steps:  "0 1 2 3 4"

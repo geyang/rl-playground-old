@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class Sine():
+class Sine:
     def __init__(self, npts=100, domain=(-5, 5), amp=None, phi0=None):
         self.npts = npts
         self.domain = domain  # this is the domain on which function is defined.

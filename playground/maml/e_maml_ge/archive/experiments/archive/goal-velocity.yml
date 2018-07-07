@@ -63,7 +63,7 @@ batch_args: # use good typing convention here
 #    no_maml_gradient: 1
 #    no_task_resample: 1
 #    n_epochs: 2000
-#    n_tasks: 10
+#    n_graphs: 10
 #    n_grad_steps: 1 # start for 1
 #    eval_grad_steps:  "0 1"
 #    n_parallel_envs: 8

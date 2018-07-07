@@ -1,4 +1,3 @@
-import gym
 import numpy
 
 from playground.maml.maml_tf import config
@@ -10,60 +9,69 @@ assert IS_PATCHED, "need to use patch for new env and proper monitor wraps"
 
 MAZE_KEYS = MAZES.keys()
 # GRID_WORLD_KEYS = GRID_WORLDS.keys()
-ALLOWED_ENVS = "HalfCheetah-v2", "HalfCheetahGoalVel-v0", *MAZE_KEYS  # *GRID_WORLD_KEYS
+ALLOWED_ENVS = "HalfCheetah-v2", "HalfCheetahGoalVel-v0", "HalfCheetahGoalDir-v0", *MAZE_KEYS  # *GRID_WORLD_KEYS
 
 
-class MetaRLTasks():
+class MetaRLTasks:
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.envs.close()
 
-    def __init__(self, *, env_name, batch_size, start_seed, task_seed, log_directory=None, max_steps=None):
+    def __init__(self, *, env_name, batch_size, start_seed, log_directory=None, max_steps=None):
         """
         use log_directory/{seed}/ to dynamically generate movies with individual seeds.
         """
+        import gym
+        gym.logger.set_level(40)  # set logging level to avoid annoying warning.
+
         assert env_name in ALLOWED_ENVS, \
             "environment {} is not supported. Need to be one of {}".format(env_name, ALLOWED_ENVS)
 
         # keep the env_name for sampling logic. Can be removed if made more general.
         self.env_name = env_name
 
-        def make_env(*, seed, env_name, monitor_log_directory=None, wrap=None):
-            nonlocal max_steps
-            env = gym.make(env_name)
-            # Note: gym seed does not allow task_seed. Use constructor instead.
-            # if self.env_name in GRID_WORLD_KEYS:
-            #     env.seed(seed=(seed, task_seed))
-            # else:
-            env.seed(seed=seed)
-            if max_steps:  # 0, None, False are null values.
-                # see issue #410: https://github.com/openai/gym/issues/410 the TimeLimit wrapper is now used as a
-                # standard wrapper, and the _max_episode_steps is used inside TimeLimit wrapper for episode step-out
-                # limit.
-                # Note: should not override the default when reporting.
-                env._max_episode_steps = max_steps
+        def make_env(env_seed, env_name, monitor_log_directory=None, wrap=None):
+            def _f():
+                nonlocal max_steps
+                env = gym.make(env_name)
+                # Note: gym seed does not allow task_seed. Use constructor instead.
+                # if self.env_name in GRID_WORLD_KEYS:
+                #     env.seed(seed=(seed, task_seed))
+                # else:
+                print(f'seed == {env_seed}')
+                env.seed(seed=env_seed)
+                if max_steps:  # 0, None, False are null values.
+                    # see issue #410: https://github.com/openai/gym/issues/410 the TimeLimit wrapper is now used as a
+                    # standard wrapper, and the _max_episode_steps is used inside TimeLimit wrapper for episode step-out
+                    # limit.
+                    # Note: should not override the default when reporting.
+                    env._max_episode_steps = max_steps
 
-            # setting numpy.random.seed is a very bad pattern.
-            numpy.random.seed(seed)
-            if monitor_log_directory is not None:
-                env = gym.wrappers.Monitor(env, monitor_log_directory.format(seed=seed), force=True)
-                # todo: use bench Montior
-                # from rl_algs.bench import Monitor
-                # env = Monitor(env, monitor_log_directory.format(seed=seed), force=True)
-            if wrap:
-                env = wrap(env)
-            return env
+                # setting numpy.random.seed is a very bad pattern.
+                numpy.random.seed(env_seed)
+                if monitor_log_directory is not None:
+                    env = gym.wrappers.Monitor(env, monitor_log_directory.format(seed=seed), force=True)
+                    # todo: use bench Montior
+                    # from rl_algs.bench import Monitor
+                    # env = Monitor(env, monitor_log_directory.format(seed=seed), force=True)
+                if wrap:
+                    env = wrap(env)
+                return env
+            return _f
 
         # if self.env_name in MAZE_KEYS:
         #     # Maze configuration logic
         #     path = MAZES[self.env_name]
         #     self.envs = MazeEnv(batch_size=batch_size, path=path, seed=start_seed, n_episodes=1, num_envs=batch_size)
         # else:
+        for s in range(batch_size):
+            print(f"seed should be: {start_seed + s}")
+
         self.envs = SubprocVecEnv(
-            [lambda: make_env(seed=start_seed + s, env_name=env_name, monitor_log_directory=log_directory)
-             for s in range(batch_size)])
+            [make_env(env_seed=start_seed + s, env_name=env_name, monitor_log_directory=log_directory) for s in
+             range(batch_size)])
 
         if config.G.normalize_env:
             self.envs = vec_normalize(self.envs)
@@ -79,6 +87,10 @@ class MetaRLTasks():
             new_goal = numpy.random.uniform(0, 2.0)
             # print('New Goal Velocity: ', new_goal)
             envs.set_goal_velocity(new_goal if identical_batch else None)
+        elif self.env_name == "HalfCheetahGoalDir-v0":
+            new_direction = 1 if numpy.random.rand() > 0.5 else -1
+            # print('New Goal Velocity: ', new_goal)
+            envs.set_goal_direction(new_direction if identical_batch else None)
         elif self.env_name in MAZE_KEYS:
             envs.reset_task()
         # elif self.env_name in GRID_WORLD_KEYS:
@@ -107,7 +119,7 @@ if __name__ == "__main__":
     # Example Usages:
     tasks = MetaRLTasks(env_name=TestGlobals.env_name, batch_size=TestGlobals.n_envs, start_seed=TestGlobals.start_seed,
                         # log_directory=TestGlobals.log_directory.format(env_name=TestGlobals.env_name) + "/{seed}",
-                        task_seed=42, max_steps=10)
+                        max_steps=10)
 
     envs = tasks.sample()
     envs.reset()

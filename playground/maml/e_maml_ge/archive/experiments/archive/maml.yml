@@ -63,7 +63,7 @@ batch_args: # use good typing convention here
 #    vf_coef: 0.03125 # idea is to use this to reduce the update on the value function
 #    eval_plot_interval: 1
 #    n_epochs: 500
-#    n_tasks: 32
+#    n_graphs: 32
 #    n_grad_steps: 1
 #    n_parallel_envs: 1
 #    env_horizon_max_steps: 64
@@ -78,7 +78,7 @@ batch_args: # use good typing convention here
 #    vf_coef: 0.03125 # idea is to use this to reduce the update on the value function
 #    eval_plot_interval: 1
 #    n_epochs: 500
-#    n_tasks: 32
+#    n_graphs: 32
 #    n_grad_steps: 1
 #    n_parallel_envs: 1
 #    env_horizon_max_steps: 64
@@ -93,7 +93,7 @@ batch_args: # use good typing convention here
 #    vf_coef: 0.03125 # idea is to use this to reduce the update on the value function
 #    eval_plot_interval: 1
 #    n_epochs: 500
-#    n_tasks: 32
+#    n_graphs: 32
 #    n_grad_steps: 1
 #    n_parallel_envs: 1
 #    env_horizon_max_steps: 64
@@ -108,7 +108,7 @@ batch_args: # use good typing convention here
 #    vf_coef: 0.03125 # idea is to use this to reduce the update on the value function
 #    eval_plot_interval: 1
 #    n_epochs: 500
-#    n_tasks: 32
+#    n_graphs: 32
 #    n_grad_steps: 1
 #    n_parallel_envs: 1
 #    env_horizon_max_steps: 64
@@ -123,7 +123,7 @@ batch_args: # use good typing convention here
 #    vf_coef: 0.03125 # idea is to use this to reduce the update on the value function
 #    eval_plot_interval: 1
 #    n_epochs: 500
-#    n_tasks: 32
+#    n_graphs: 32
 #    n_grad_steps: 1
 #    n_parallel_envs: 1
 #    env_horizon_max_steps: 64
@@ -138,7 +138,7 @@ batch_args: # use good typing convention here
 #    vf_coef: 0.03125 # idea is to use this to reduce the update on the value function
 #    eval_plot_interval: 1
 #    n_epochs: 500
-#    n_tasks: 32
+#    n_graphs: 32
 #    n_grad_steps: 1
 #    n_parallel_envs: 1
 #    env_horizon_max_steps: 64
@@ -153,7 +153,7 @@ batch_args: # use good typing convention here
 #    vf_coef: 0.03125 # idea is to use this to reduce the update on the value function
 #    eval_plot_interval: 1
 #    n_epochs: 500
-#    n_tasks: 32
+#    n_graphs: 32
 #    n_grad_steps: 1
 #    n_parallel_envs: 1
 #    env_horizon_max_steps: 64
@@ -168,7 +168,7 @@ batch_args: # use good typing convention here
 #    vf_coef: 0.03125 # idea is to use this to reduce the update on the value function
 #    eval_plot_interval: 1
 #    n_epochs: 500
-#    n_tasks: 32
+#    n_graphs: 32
 #    n_grad_steps: 1
 #    n_parallel_envs: 1
 #    env_horizon_max_steps: 64

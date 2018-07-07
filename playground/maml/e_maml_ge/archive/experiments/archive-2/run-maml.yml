@@ -47,7 +47,7 @@ batch_args: # use good typing convention here
 # Note: rl_MAML has exploration tied with theta. E terms account for exploration.
 #  - run_mode: e_maml
 #    log_directory: /mnt/slab/krypton/machine_learning/maml_runs/goal-cheetah/reproduce-run/{time:%Y-%m-%d}/{time:%H%M%S.%f}-e-maml/
-#    n_tasks: 40
+#    n_graphs: 40
 #    n_parallel_envs: 20  # 20
 #    single_sampling: 0  # sample once, gradient descent multiple times.
 #    n_grad_steps: 1
@@ -62,7 +62,7 @@ batch_args: # use good typing convention here
 #    meta_optimizer: Adam
 #  - run_mode: maml
 #    log_directory: /mnt/slab/krypton/machine_learning/maml_runs/goal-cheetah/reproduce-run/{time:%Y-%m-%d}/{time:%H%M%S.%f}-maml/
-#    n_tasks: 40
+#    n_graphs: 40
 #    n_parallel_envs: 20  # 20
 #    single_sampling: 0  # sample once, gradient descent multiple times.
 #    n_grad_steps: 1
@@ -77,7 +77,7 @@ batch_args: # use good typing convention here
 #    meta_optimizer: Adam
 #  - run_mode: e_maml
 #    log_directory: /mnt/slab/krypton/machine_learning/maml_runs/goal-cheetah/reproduce-run/{time:%Y-%m-%d}/{time:%H%M%S.%f}-e-maml/
-#    n_tasks: 40
+#    n_graphs: 40
 #    n_parallel_envs: 20  # 20
 #    single_sampling: 0  # sample once, gradient descent multiple times.
 #    n_grad_steps: 1
@@ -92,7 +92,7 @@ batch_args: # use good typing convention here
 #    meta_optimizer: Adam
 #  - run_mode: maml
 #    log_directory: /mnt/slab/krypton/machine_learning/maml_runs/goal-cheetah/reproduce-run/{time:%Y-%m-%d}/{time:%H%M%S.%f}-maml/
-#    n_tasks: 40
+#    n_graphs: 40
 #    n_parallel_envs: 20  # 20
 #    single_sampling: 0  # sample once, gradient descent multiple times.
 #    n_grad_steps: 1
@@ -107,7 +107,7 @@ batch_args: # use good typing convention here
 #    meta_optimizer: Adam
 #  - run_mode: e_maml
 #    log_directory: /mnt/slab/krypton/machine_learning/maml_runs/goal-cheetah/reproduce-run/{time:%Y-%m-%d}/{time:%H%M%S.%f}-e-maml-cbfinn-parameters/
-#    n_tasks: 40
+#    n_graphs: 40
 #    n_parallel_envs: 20  # 20
 #    single_sampling: 0  # sample once, gradient descent multiple times.
 #    n_grad_steps: 1

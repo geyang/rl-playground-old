@@ -3,6 +3,10 @@ import tensorflow as tf
 from typing import Callable, Any, List, TypeVar
 
 
+def probe_var(*variables):
+    return tf.get_default_session().run(variables)
+
+
 def as_dict(c):
     return {k: v for k, v in vars(c).items() if k[0] != "_"}
 
@@ -104,13 +108,31 @@ class defaultlist():
         raise NotImplementedError('need to be implemented for remote execution.')
 
 
-def cache_ops(variables):
-    cache = [var_like(v) for v in variables]
-    # from pprint import pprint
-    # old_vars = set(tf.global_variables())
-    # new_vars = set(tf.global_variables()) - old_vars
-    # pprint(new_vars)
-    # pprint(cache)
-    save = tf.group(*[tf.stop_gradient(c.assign(v)) for c, v in zip(cache, variables)])
-    load = tf.group(*[tf.stop_gradient(v.assign(c)) for c, v in zip(cache, variables)])
-    return save, load, cache
+class Cache:
+    def __init__(self, variables):
+        """
+        creates a variable flip-flop in-memory.
+
+        :param variables:
+        :return: save_op, load_op, cache array
+        """
+        self.cache = [var_like(v) for v in variables]
+        self.save = tf.group(*[c.assign(tf.stop_gradient(v)) for c, v in zip(self.cache, variables)])
+        self.load = tf.group(*[v.assign(tf.stop_gradient(c)) for c, v in zip(self.cache, variables)])
+
+
+# goal: try to add the gradients without going through python.
+class GradientSum:
+    def __init__(self, variables, grad_inputs):
+        """k is the number of gradients you want to sum.
+        zero this gradient op once every meta iteration. """
+        self.cache = [var_like(v) for v in variables]
+        # call set before calling add op, faster than zeroing out the cache.
+        self.set_op = tf.group(*[c.assign(tf.stop_gradient(g)) for c, g in zip(self.cache, grad_inputs)])
+        self.add_op = tf.group(*[c.assign_add(tf.stop_gradient(g)) for c, g in zip(self.cache, grad_inputs)])
+
+
+def flatten(arr):
+    """swap and then flatten axes 0 and 1"""
+    n_steps, n_envs, *_ = arr.shape
+    return arr.swapaxes(0, 1).reshape(n_steps * n_envs, *_)

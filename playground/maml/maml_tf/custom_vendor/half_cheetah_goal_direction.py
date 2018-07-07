@@ -2,22 +2,19 @@ import numpy as np
 from gym import utils
 from gym.envs import register
 from gym.envs.mujoco import mujoco_env
-from gym.utils import seeding
 
 
 class Controls:
-    goal_velocity = 0.5
-    low = 0.0
-    high = 2.0
+    goal_direction = 1
 
-    def sample(self, goal_velocity=None):
-        if goal_velocity:
-            self.goal_velocity = goal_velocity
+    def sample(self, goal_direction=None):
+        if goal_direction is not None:
+            self.goal_direction = goal_direction
         else:
-            self.goal_velocity = np.random.uniform(low=self.low, high=self.high)
+            self.goal_direction = 1 if np.random.rand() > 0.5 else -1
 
 
-class HalfCheetahGoalVelEnv(mujoco_env.MujocoEnv, utils.EzPickle):
+class HalfCheetahGoalDirEnv(mujoco_env.MujocoEnv, utils.EzPickle):
     """
     Half cheetah environment with a randomly generated goal path.
     """
@@ -27,11 +24,6 @@ class HalfCheetahGoalVelEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         # call super init after initializing the variables.
         mujoco_env.MujocoEnv.__init__(self, 'half_cheetah.xml', 5)
         utils.EzPickle.__init__(self)
-
-    def seed(self, seed=None):
-        print(seed)
-        self.np_random, seed = seeding.np_random(seed)
-        return [seed]
 
     def step(self, action):
         # xposbefore = self.model.data.qpos[0, 0]
@@ -43,7 +35,7 @@ class HalfCheetahGoalVelEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         ob = self._get_obs()
         reward_ctrl = - 1e-1 * 0.5 * np.square(action).sum()  # add factor of 0.5, ref cbfinn.
         velocity = (xposafter - xposbefore) / self.dt
-        cost_run = abs(velocity - self.controls.goal_velocity)
+        cost_run = self.controls.goal_direction * velocity
         reward = reward_ctrl - cost_run
         done = False
         return ob, reward, done, dict(cost_run=cost_run, reward_ctrl=reward_ctrl)
@@ -56,12 +48,12 @@ class HalfCheetahGoalVelEnv(mujoco_env.MujocoEnv, utils.EzPickle):
             self.data.qvel,
         ])
 
-    def set_goal_velocity(self, goal_velocity=None):
-        # print('***** goal velocity **********>>', goal_velocity)
-        self.controls.sample(goal_velocity=goal_velocity)
+    def set_goal_direction(self, goal_direction=None):
+        # print('***** goal direction **********>>', goal_direction)
+        self.controls.sample(goal_direction=goal_direction)
 
-    def get_goal_velocity(self):  # only for debugging
-        return self.controls.goal_velocity
+    def get_goal_direction(self):  # only for debugging
+        return self.controls.goal_direction
 
     def reset_model(self):
         qpos = self.init_qpos + self.np_random.uniform(low=-.1, high=.1, size=self.model.nq)
@@ -74,10 +66,10 @@ class HalfCheetahGoalVelEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
 
 register(
-    id='HalfCheetahGoalVel-v0',
+    id='HalfCheetahGoalDir-v0',
     # todo: use module.sub_module:ClassName syntax to work with rcall and cloudpickle.
     # entry_point=lambda: HalfCheetahGoalVelEnv(),
-    entry_point="playground.maml.maml_tf.custom_vendor.half_cheetah_goal_velocity:HalfCheetahGoalVelEnv",
+    entry_point="playground.maml.maml_tf.custom_vendor.half_cheetah_goal_direction:HalfCheetahGoalDirEnv",
     kwargs={},
     max_episode_steps=200,
     reward_threshold=4800.0,

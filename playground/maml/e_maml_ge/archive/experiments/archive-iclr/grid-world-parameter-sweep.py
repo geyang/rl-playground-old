@@ -124,7 +124,7 @@ if __name__ == "__main__":
                                            dry_run=SAFTY_ON)
 
     # for inner_alg in ['PPO']:
-    #     for n_tasks in [32, 64, 128]:
+    #     for n_graphs in [32, 64, 128]:
     #         for alpha in [0.00001, 0.00003, 0.0001, 0.0003]:
     #             for beta in [0.05, 0.1, 0.5]:
     #                     for n_grad_steps in [1, 3, 5]:

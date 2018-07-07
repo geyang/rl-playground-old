@@ -4,9 +4,9 @@ from tqdm import trange
 import tensorflow as tf
 
 from .config import G, RUN
-from .ppo import Inputs as PPOInputs, PPO, Optimize
-from .ge_utils import defaultlist, make_with_custom_variables, cache_ops
-from .vpg import Inputs as VPGInputs, VPG
+from .vpg import Inputs as VPGInputs, VPG, Optimize as VPG_Optimize
+from .ppo import Inputs as PPOInputs, PPO, Optimize as PPO_Optimize
+from .ge_utils import defaultlist, make_with_custom_variables, GradientSum, Cache
 
 matplotlib.use("Agg")
 
@@ -16,7 +16,7 @@ from .ge_policies import MlpPolicy
 ALLOWED_ALGS = ('VPG', 'PPO')
 
 
-class Meta():
+class Meta:
     def __init__(self, *, scope_name, act_space, ob_shape, algo, reuse=False, trainables=None, optimizer=None,
                  add_loss=None, loss_only=False):
         assert algo in ALLOWED_ALGS, "model algorithm need to be one of {}".format(ALLOWED_ALGS)
@@ -24,8 +24,10 @@ class Meta():
             self.obs = obs = tf.placeholder(dtype=tf.float32, shape=ob_shape, name='obs')  # obs
             if algo == "PPO":
                 self.inputs = inputs = PPOInputs(action_space=act_space)
+                Optimize = PPO_Optimize
             elif algo == "VPG":
                 self.inputs = inputs = VPGInputs(action_space=act_space)
+                Optimize = VPG_Optimize
             else:
                 raise NotImplementedError('Only supports PPO and VPG')
             inputs.X = obs
@@ -59,7 +61,7 @@ def cmaml_loss(neglogpacs, advantage):
     return exploration_term
 
 
-class SingleTask():
+class SingleTask:
     def __init__(self, act_space, ob_shape, trainables):
         # no need to go beyond despite of large G.eval_grad_steps, b/c RL samples using runner policy.
 
@@ -76,35 +78,35 @@ class SingleTask():
                                  ),  # pass in the trainables for proper gradient
                     params[-1]
                 )
-                with tf.variable_scope('meta_SGD_grad_{}'.format(k)) as s:
+                with tf.variable_scope('SGD_grad_{}'.format(k)):
                     if G.first_order:
                         params[k + 1] = [worker.optim.apply_grad(grad=tf.stop_gradient(g), var=v) for g, v in
                                          zip(worker.optim.grads, params[-1])]
                     else:
-                        params[k + 1] = [worker.optim.apply_grad(grad=g, var=v)
-                                         for g, v in zip(worker.optim.grads, params[-1])]
+                        params[k + 1] = [worker.optim.apply_grad(grad=g, var=v) for g, v in
+                                         zip(worker.optim.grads, params[-1])]
 
             if k == G.n_grad_steps:  # 10 or 1.
                 loss_fn = lambda ADV: cmaml_loss([w.model.neglogpac for w in self.workers], ADV) \
                     if G.run_mode == "e_maml" else None
                 self.meta = make_with_custom_variables(
                     lambda: Meta(scope_name="meta_network", act_space=act_space, ob_shape=ob_shape,
-                                 algo=G.meta_alg, reuse=True, add_loss=loss_fn, loss_only=True
-                                 ),
+                                 algo=G.meta_alg, reuse=True, add_loss=loss_fn, loss_only=True),
                     params[-1]
                 )
 
-        # Expose as non-official API for debugging purposes
+        # Expose as non-public API for debugging purposes
         self._params = params
 
 
 # Algorithm Summary
 # 1. [sample] with pi(theta) `run_episode`
 # 2. compute policy gradient (vanilla)
-# 3. apply gradient to get \theta'
+# 3. apply gradient to get \theta' using SGD
 # 4. [sample] with pi(theta') `run_episode`
 # 5. use PPO, compute meta gradient
-# 6. apply gradient and go again.
+# 6. sum up the PPO gradient from multiple tasks and average
+# 6. apply this gradient
 class E_MAML:
     def __init__(self, ob_space, act_space):
         """
@@ -114,27 +116,59 @@ class E_MAML:
         """
         ob_shape = (None,) + ob_space.shape
 
+        # Meta holds policy, inner optimizer
         self.runner = Meta(scope_name='runner', act_space=act_space, ob_shape=ob_shape, algo=G.inner_alg,
                            optimizer=G.inner_optimizer)
         trainables = self.runner.policy.trainables
-        self.task_graphs = []
-        print(">>>>>>>>>>> Constructing Meta Graph <<<<<<<<<<<")
-        for t in trange(G.n_tasks):
-            with tf.variable_scope("task_{task_ind}".format(task_ind=t)):
-                self.task_graphs.append(SingleTask(act_space=act_space, ob_shape=ob_shape, trainables=trainables))
 
         self.beta = tf.placeholder(tf.float32, [], name="beta")
-        self.optim = Optimize(lr=self.beta, loss=tf.reduce_mean([t.meta.loss for t in self.task_graphs]),
-                              trainables=self.runner.trainables, max_grad_norm=G.max_grad_norm,
-                              optimizer=G.meta_optimizer)
 
-        # Only do this after the meta graph has finished using policy.trainables
-        # Note: stateful operators for saving to a cache and loading from it. Only used to reset runner
-        # Note: Slots are not supported. Only weights.
-        with tf.variable_scope("weight_cache"):
-            self.save_checkpoint, self.load_checkpoint, run_params = \
-                [U.function([], [op]) for op in cache_ops(trainables)]
+        print(">>>>>>>>>>> Constructing Meta Graph <<<<<<<<<<<")
+        # todo: we can do multi-GPU placement of the graph here.
+        self.graphs = []
+        for t in trange(G.n_graphs):
+            with tf.variable_scope(f"graph_{t}"):
+                task_graph = SingleTask(act_space=act_space, ob_shape=ob_shape, trainables=trainables)
+                self.graphs.append(task_graph)
 
-    def run_apply_grads(self, grad_stack, lr):
-        averaged_grads = map(lambda x: sum(x) / len(x), zip(*grad_stack))
-        return self.meta.model.run_apply_grads(grads=averaged_grads, lr=lr)
+                with tf.variable_scope('meta_optimizer'):
+                    assert G.n_graphs == 1, "hard code the n_graphs to 1 b/c we don't do multi-device placement yet."
+                    # call gradient_sum.set_op first, then add_op. Call k times in-total.
+
+                    # do NOT apply gradient norm here.
+                    # if G.meta_alg == "PPO":
+                    #     Optimize = PPO_Optimize
+                    # elif G.meta_alg == "VPG":
+                    #     Optimize = VPG_Optimize
+                    # meta_optim = Optimize(lr=self.beta, loss=task_graph.meta.loss, trainables=trainables,
+                    #                       max_grad_norm=None, optimizer=G.meta_optimizer)
+                    # self.meta_grads = meta_optim.grads
+                    # self.gradient_sum = GradientSum(trainables, self.meta_grads)
+                    # # question: apply grad norm before or after?
+                    # grads = [c / G.n_tasks for c in self.gradient_sum.cache]
+                    # if G.max_grad_norm:
+                    #     self.grads, grad_norm = tf.clip_by_global_norm(grads, G.max_grad_norm)
+                    # self.meta_optimize_op = [meta_optim.apply_grad(grad=g, var=v) for v, g in zip(grads, trainables)]
+
+                    # mistake. single task?
+                    self.meta_grads = tf.gradients(task_graph.meta.loss, trainables)
+                    self.gradient_sum = GradientSum(trainables, self.meta_grads)
+                    grads = [c / G.n_tasks for c in self.gradient_sum.cache]
+
+                    # do NOT apply gradient norm here.
+                    if G.meta_optimizer == "Adam":
+                        Optim = tf.train.AdamOptimizer
+                    elif G.meta_optimizer == "SGD":
+                        Optim = tf.train.GradientDescentOptimizer
+                    self.meta_optimizer = Optim(learning_rate=self.beta)
+                    self.meta_update_op = self.meta_optimizer.apply_gradients(zip(grads, trainables))
+
+
+                # Only do this after the meta graph has finished using policy.trainables
+                # Note: stateful operators for saving to a cache and loading from it. Only used to reset runner
+                # Note: Slots are not supported. Only weights.
+                with tf.variable_scope("weight_cache"):
+                    self.cache = Cache(trainables)
+                    self.save_checkpoint = U.function([], [self.cache.save])
+                    self.load_checkpoint = U.function([], [self.cache.load])
+
