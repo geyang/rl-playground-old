@@ -435,7 +435,7 @@ class G:
     # log_dir = "http://54.71.92.65:8081"
     log_dir = os.path.realpath(f'../../../../../ins-runs/')
     # log_dir = "/tmp/maml_torch"
-    log_prefix = f'{now:%Y-%m-%d}/maml-debug'
+    log_prefix = f'{now:%Y-%m-%d}/supervised-maml-debug'
     seed = 19024
     alpha = 0.001
     beta = 0.001

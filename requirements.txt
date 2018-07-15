@@ -12,4 +12,3 @@ jaynes
 waterbear
 dill
 mock
-comet-ml

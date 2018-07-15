@@ -6,13 +6,18 @@ DIR_TEMPLATE = "{now:%Y-%m-%d}/" \
                "{G.run_mode}-{G.env_name}-n_grad({G.n_grad_steps})" \
                "-{G.inner_alg}-{G.inner_optimizer}" \
                "-{G.meta_alg}-{G.meta_optimizer}-alpha({G.alpha})-beta({G.beta})" \
-               "-n_graphs({G.n_graphs})-env_norm({G.normalize_env})"  # type: "directory to use for logging"
+               "-n_graphs({G.n_graphs})-env_norm({G.normalize_env})" \
+               "-grad_norm({G.inner_max_grad_norm})-meta_grad_norm({G.meta_max_grad_norm})-{now:%H%M%S}-{now:%f}"
+
+from datetime import datetime
+
+now = datetime.now()
 
 
 @cli_parse
 class RUN:
     log_dir = "http://54.71.92.65:8081"
-    log_prefix = 'maml-debug'
+    log_prefix = f'{now:%Y-%m-%d}/rl-maml-debug'
 
 
 def config_run(**_G):
@@ -37,8 +42,7 @@ class G:
     n_graphs = Proto(1, help="number of parallel graphs for multi-device parallelism. Hard coded to 1 atm.")
     n_grad_steps = 1  # type:  "number of gradient descent steps for the worker." #TODO change back to 1
     eval_grad_steps = Proto(list(range(n_grad_steps + 1)),
-                            help="the gradient steps at which we evaluate the policy. Used "
-                                 "to make pretty plots.")
+                            help="the gradient steps at which we evaluate the policy. Used to make pretty plots.")
     n_epochs = 2000  # type:  "Number of epochs"
     # 40k per task (action, state) tuples, or 20k (per task) if you have 10/20 meta tasks
     n_parallel_envs = 40  # type:  "Number of parallel envs in minibatch. The SubprocVecEnv batch_size."
@@ -46,7 +50,7 @@ class G:
     env_max_timesteps = Proto(0, help="max_steps for each episode, used to set env._max_steps parameter. 0 to use "
                                       "gym default.")
     single_sampling = 0  # type:  "flag for running a single sampling step. 1 ON, 0 OFF"
-    baseline = Proto('critic', help="using the critic as the baseline")
+    baseline = Proto('linear', help="using the critic as the baseline")
     meta_sgd = Proto(False, help="NOT YET IMPLEMENTED. Learn a gradient for each parameter")
     # Note: MAML Options
     first_order = Proto(True, help="Whether to stop gradient calculation during meta-gradient calculation")
@@ -57,7 +61,7 @@ class G:
     inner_max_grad_norm = 1.0  # type:  "PPO maximum gradient norm"
     meta_alg = "PPO"  # type:  "PPO or TRPO, TRPO is not yet implemented."
     meta_optimizer = "Adam"  # type:  '"Adam" or "SGD"'
-    meta_max_grad_norm = 0  # type:  "PPO maximum gradient norm"
+    meta_max_grad_norm = 1.0  # type:  "PPO maximum gradient norm"
     activation = "tanh"
     hidden_size = 64  # type: "hidden size for the MLP policy"
     # Model options
@@ -77,10 +81,6 @@ class G:
 class Reporting:
     report_mean = False  # type:  "plot the mean instead of the total reward per episode"
     log_device_placement = False
-
-    plot_server = "http://slab-krypton.uchicago.edu"  # type: "server url, need to include protocol [http(s)://]."
-    plot_server_port = 8097  # type: "port for the visdom server"
-
     plot_interval = 10  # type: "plotting batch size"
     plot_smoothing = 20  # type: "smoothing factor"
     save_interval = 0  # type: "plotting batch size"

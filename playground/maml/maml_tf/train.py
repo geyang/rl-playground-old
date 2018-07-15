@@ -4,6 +4,8 @@ from playground.maml.maml_tf.meta_rl_tasks import MetaRLTasks
 from playground.maml.maml_tf import config
 from playground.maml.maml_tf.e_maml_ge import E_MAML
 from playground.maml.maml_tf.trainer import Trainer
+
+
 # from playground.maml.maml_tf.trainer import comet_logger
 
 
@@ -14,7 +16,7 @@ def run_e_maml(_G=None):
 
     # for k, v in [*vars(config.RUN).items(), *vars(config.G).items(), *vars(config.Reporting).items(),
     #              *vars(config.DEBUG).items()]:
-        # comet_logger.log_parameter(k, v)
+    #     comet_logger.log_parameter(k, v)
 
     # todo: let's take the control of the log director away from the train script. It should all be set from outside.
     logger.configure(log_directory=config.RUN.log_dir, prefix=config.RUN.log_prefix)
@@ -72,12 +74,8 @@ def launch(**_G):
 
 
 if __name__ == '__main__':
-    # import cloudpickle
-    # cloudpickle.dumps(launch)
+    config.RUN.log_prefix = "alpha-0-check"
+    launch()
 
-    # config.RUN.log_prefix = "alpha-0-check"
-    # launch()
-
-    from playground.maml.maml_torch.experiments.run import run
-
-    run(launch, log_prefix="quick-test", _as_daemon=False)
+    # from playground.maml.maml_torch.experiments.run import run
+    # run(launch, log_prefix="quick-test", _as_daemon=False)

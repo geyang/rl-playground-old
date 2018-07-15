@@ -64,9 +64,6 @@ class MetaRLTasks:
         #     # Maze configuration logic
         #     path = MAZES[self.env_name]
         #     self.envs = MazeEnv(batch_size=batch_size, path=path, seed=start_seed, n_episodes=1, num_envs=batch_size)
-        # else:
-        for s in range(batch_size):
-            print(f"seed should be: {start_seed + s}")
 
         self.envs = SubprocVecEnv(
             [make_env(env_seed=start_seed + s, env_name=env_name, monitor_log_directory=log_directory) for s in
