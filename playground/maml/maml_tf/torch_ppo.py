@@ -2,7 +2,7 @@ from ml_logger import logger
 from params_proto import cli_parse
 
 from playground.maml.maml_tf.meta_rl_tasks import MetaRLTasks
-# from playground.maml.maml_tf.trainer import comet_logger
+from playground.maml.maml_tf.trainer import comet_logger
 
 
 @cli_parse
@@ -21,8 +21,8 @@ def run_maml(_G=None):
     if _G is not None:
         G.update(_G)
 
-    # for k, v in vars(G).items():
-    #     comet_logger.log_parameter(k, v)
+    for k, v in vars(G).items():
+        comet_logger.log_parameter(k, v)
 
     # todo: let's take the control of the log director away from the train script. It should all be set from outside.
     logger.configure(log_directory=G.log_dir, prefix=G.log_prefix)

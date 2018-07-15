@@ -10,7 +10,6 @@ from .ge_utils import defaultlist, probe_var
 import numpy as np
 from . import ppo, vpg
 
-
 comet_logger = Experiment(api_key="ajVBg1bSCmLJQ2aiCQu6Sp6aA", project_name='rl-playground/rl-maml')
 
 
@@ -122,7 +121,7 @@ class Trainer(object):
                         batch_data[f"grad_{k}_step_reward"].append(
                             avg_r if Reporting.report_mean else episode_r)
 
-                    logger.log_keyvalue(epoch_ind, f"task_{task_ind}_grad_{k}_reward", episode_r, silent=True)
+                    comet_logger.log_metric(f"task_{task_ind}_grad_{k}_reward", episode_r, step=epoch_ind)
 
                     # if episode_r < G.term_reward_threshold:
                     #     # todo: make this based on batch instead of a single episode.
@@ -173,6 +172,7 @@ class Trainer(object):
             for key in batch_data.keys():
                 reduced = np.array(batch_data[key]).mean()
                 logger.log_keyvalue(epoch_ind, key, reduced)
+                comet_logger.log_metric(key, reduced, step=epoch_ind)
 
 
 def path_to_feed_dict(*, inputs, paths, lr=None, **rest):

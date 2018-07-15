@@ -18,7 +18,7 @@ ALLOWED_ALGS = ('VPG', 'PPO')
 
 class Meta:
     def __init__(self, *, scope_name, act_space, ob_shape, algo, reuse=False, trainables=None, optimizer=None,
-                 add_loss=None, loss_only=False, max_grad_norm=None):
+                 add_loss=None, loss_only=False):
         assert algo in ALLOWED_ALGS, "model algorithm need to be one of {}".format(ALLOWED_ALGS)
         with tf.variable_scope(scope_name, reuse=False):
             self.obs = obs = tf.placeholder(dtype=tf.float32, shape=ob_shape, name='obs')  # obs
@@ -51,7 +51,7 @@ class Meta:
             else:
                 inputs.LR = tf.placeholder(tf.float32, [], name="LR")
                 self.optim = Optimize(lr=inputs.LR, loss=self.loss, trainables=trainables,
-                                      max_grad_norm=max_grad_norm, optimizer=optimizer)
+                                      max_grad_norm=G.max_grad_norm, optimizer=optimizer)
 
 
 def cmaml_loss(neglogpacs, advantage):
@@ -74,8 +74,8 @@ class SingleTask:
                 self.workers[k] = worker = make_with_custom_variables(
                     lambda: Meta(scope_name='inner_{grad_step}_grad_network'.format(grad_step=k),
                                  act_space=act_space, ob_shape=ob_shape, algo=G.inner_alg,
-                                 optimizer=G.inner_optimizer, reuse=True, trainables=params[-1],
-                                 max_grad_norm=G.inner_max_grad_norm),  # pass in the trainables for proper gradient
+                                 optimizer=G.inner_optimizer, reuse=True, trainables=params[-1]
+                                 ),  # pass in the trainables for proper gradient
                     params[-1]
                 )
                 with tf.variable_scope('SGD_grad_{}'.format(k)):
@@ -155,9 +155,9 @@ class E_MAML:
                     self.gradient_sum = GradientSum(trainables, self.meta_grads)
                     grads = [c / G.n_tasks for c in self.gradient_sum.cache]
 
-                    if G.meta_max_grad_norm:  # allow 0 to be by-pass
-                        grads = [g * tf.stop_gradient(G.meta_max_grad_norm / tf.maximum(G.meta_max_grad_norm, tf.norm(g)))
-                                 for g in grads]
+                    if G.max_grad_norm:  # allow 0 to be by-pass
+                        grads = [g * tf.stop_gradient(G.max_grad_norm / tf.maximum(G.max_grad_norm, tf.norm(g))) for g
+                                 in grads]
 
                     # do NOT apply gradient norm here.
                     if G.meta_optimizer == "Adam":
