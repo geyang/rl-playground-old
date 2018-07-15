@@ -1,7 +1,7 @@
 import tensorflow as tf
 from collections import defaultdict
 from ml_logger import logger
-from comet_ml import Experiment
+# from comet_ml import Experiment
 from .e_maml_ge import E_MAML
 from .ge_policies import MlpPolicy
 from baselines.common.vec_env.subproc_vec_env import SubprocVecEnv
@@ -10,7 +10,7 @@ from .ge_utils import defaultlist, probe_var
 import numpy as np
 from . import ppo, vpg
 
-comet_logger = Experiment(api_key="ajVBg1bSCmLJQ2aiCQu6Sp6aA", project_name='rl-playground/rl-maml')
+# comet_logger = Experiment(api_key="ajVBg1bSCmLJQ2aiCQu6Sp6aA", project_name='rl-playground/rl-maml')
 
 
 class Trainer(object):
@@ -20,6 +20,7 @@ class Trainer(object):
         """
         # todo: use a default dict for these data collection. Much cleaner.
         mb_obs, mb_rewards, mb_actions, mb_values, mb_dones, mb_neglogpacs = [], [], [], [], [], []
+        true_reward = []
 
         dones = [False] * env.num_envs
         if render:
@@ -38,9 +39,13 @@ class Trainer(object):
             mb_values.append(values)
             mb_neglogpacs.append(neglogpacs)
             mb_dones.append(dones)
-            self.obs[:], rewards, dones, infos = env.step(actions)
-            if render: env.render()
+            self.obs[:], rewards, dones, info = env.step(actions)
+            if render:
+                env.render()
             mb_rewards.append(rewards)
+
+            if 'avg_reward' in info:
+                true_reward.append(info['avg_reward'])
 
         # batch of steps to batch of rollouts
         mb_obs = np.asarray(mb_obs, dtype=self.obs.dtype)
@@ -67,7 +72,7 @@ class Trainer(object):
 
         # return dimension is Size(timesteps, n_envs, feature_size)
         return dict(obs=mb_obs, rewards=mb_rewards, returns=mb_returns, dones=mb_dones, actions=mb_actions,
-                    values=mb_values, neglogpacs=mb_neglogpacs)
+                    values=mb_values, neglogpacs=mb_neglogpacs, ep_info=dict(reward=np.mean(true_reward)))
 
     def train(self, *, tasks, maml: E_MAML):
         max_grad_steps = max(G.n_grad_steps, *G.eval_grad_steps)
@@ -108,21 +113,22 @@ class Trainer(object):
                         # M.print('$!#$@#$ sample from environment')
                         p = self.sample_from_env(env, maml.runner.policy, render=False)
 
-                    avg_r = np.mean(p['rewards'])
+                    ep_info = p['ep_info']
+                    avg_r = ep_info['reward'] if G.normalize_env else np.mean(p['rewards'])
                     episode_r = avg_r * tasks.spec.max_episode_steps  # default horizon for HalfCheetah
 
                     if k in G.eval_grad_steps:
                         batch_data[f"grad_{k}_step_reward"].append(
                             avg_r if Reporting.report_mean else episode_r)
 
-                    comet_logger.log_metric(f"task_{task_ind}_grad_{k}_reward", episode_r, step=epoch_ind)
+                    # comet_logger.log_metric(f"task_{task_ind}_grad_{k}_reward", episode_r, step=epoch_ind)
 
-                    if episode_r < G.term_reward_threshold:
-                        # todo: make this based on batch instead of a single episode.
-                        print(episode_r)
-                        raise RuntimeError('AVERAGE REWARD TOO LOW. Terminating the experiment.')
+                    # if episode_r < G.term_reward_threshold:
+                    #     # todo: make this based on batch instead of a single episode.
+                    #     print(episode_r)
+                    #     raise RuntimeError('AVERAGE REWARD TOO LOW. Terminating the experiment.')
 
-                    _p = {k: v for k, v in p.items() if k != "ep_infos"}
+                    _p = {k: v for k, v in p.items() if k != "ep_info"}
 
                     if k < max_grad_steps:
                         # M.red('....... Optimize Model')
@@ -166,7 +172,7 @@ class Trainer(object):
             for key in batch_data.keys():
                 reduced = np.array(batch_data[key]).mean()
                 logger.log_keyvalue(epoch_ind, key, reduced)
-                comet_logger.log_metric(key, reduced, step=epoch_ind)
+                # comet_logger.log_metric(key, reduced, step=epoch_ind)
 
 
 def path_to_feed_dict(*, inputs, paths, lr=None, **rest):

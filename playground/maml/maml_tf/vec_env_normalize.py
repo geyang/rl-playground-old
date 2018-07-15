@@ -21,12 +21,13 @@ def vec_normalize(envs, ob=True, ret=True, clipob=10., cliprew=10., gamma=0.99):
         """
         nonlocal ret
         obs, rewards, news, infos = _step(vac)
+        _info = dict(avg_reward=rewards.mean())
         ret = ret * gamma + rewards
         obs = _obfilt(obs)
         if ret_rms:
             ret_rms.update(ret)
             rewards = np.clip(rewards / np.sqrt(ret_rms.var), -cliprew, cliprew)
-        return obs, rewards, news, infos
+        return obs, rewards, news, _info
 
     def _obfilt(obs):
         if ob_rms:

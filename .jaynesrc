@@ -1,0 +1,32 @@
+version: '0.1'
+verbose: true
+mounts:
+- type: s3
+  s3_prefix: s3://ge-bair/
+  code_name: null
+  code_root: .
+  excludes: ['*.png', '*__pycache__', '*.git','*.idea' ,'*.egg-info' ,'dist' ,'build' ,'.pytest_cache' ,'__dataset',
+             'outputs']
+prelaunch: |
+  yes | pip install jaynes awscli
+run_script:
+- mode: local
+  docker_image: python:3.6
+  lambda: playground
+- mode: ssh
+  docker_image: python:3.6
+  ip: 1.32.3.4
+  pem: ~/.ec2/ge-berkeley
+  username: ubuntu
+  password: something
+- mode: ec2
+  docker_image: python:3.6
+  spot_price: 0.4
+  region: us-west-2
+  type: t2.micro
+  use_gpu: true
+  upload_interval: 300
+  key_name: ge-berkeley
+  ami_image_id: ami-bd4fd7c5
+  security_group: torch-gym-prebuilt
+  iam_instance_profile_arn: arn:aws:iam::055406702465:instance-profile/main

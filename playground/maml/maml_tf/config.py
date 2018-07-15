@@ -46,7 +46,7 @@ class G:
     env_max_timesteps = Proto(0, help="max_steps for each episode, used to set env._max_steps parameter. 0 to use "
                                       "gym default.")
     single_sampling = 0  # type:  "flag for running a single sampling step. 1 ON, 0 OFF"
-    baseline = Proto('linear', help="using the critic as the baseline")
+    baseline = Proto('critic', help="using the critic as the baseline")
     meta_sgd = Proto(False, help="NOT YET IMPLEMENTED. Learn a gradient for each parameter")
     # Note: MAML Options
     first_order = Proto(True, help="Whether to stop gradient calculation during meta-gradient calculation")
@@ -54,15 +54,16 @@ class G:
     beta = 0.01  # type:  "meta learning rate"
     inner_alg = "VPG"  # type:  '"PPO" or "VPG", "rl_algs.VPG" or "rl_algs.PPO" for rl_algs baselines'
     inner_optimizer = "SGD"  # type:  '"Adam" or "SGD"'
+    inner_max_grad_norm = 1.0  # type:  "PPO maximum gradient norm"
     meta_alg = "PPO"  # type:  "PPO or TRPO, TRPO is not yet implemented."
     meta_optimizer = "Adam"  # type:  '"Adam" or "SGD"'
+    meta_max_grad_norm = 0  # type:  "PPO maximum gradient norm"
     activation = "tanh"
     hidden_size = 64  # type: "hidden size for the MLP policy"
     # Model options
     normalize_env = False  # type: "normalize the environment"
     vf_coef = 0.5  # type:  "loss weighing coefficient for the value function loss. with the VPG loss being 1.0"
     ent_coef = 0.01  # type:  "PPO entropy coefficient"
-    max_grad_norm = 0.5  # type:  "PPO maximum gradient norm"
     clip_range = 0.2  # type:  "PPO clip_range parameter"
     # GAE runner options
     gamma = 0.99  # type:  "GAE gamma"

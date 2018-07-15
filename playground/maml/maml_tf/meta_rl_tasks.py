@@ -40,7 +40,6 @@ class MetaRLTasks:
                 # if self.env_name in GRID_WORLD_KEYS:
                 #     env.seed(seed=(seed, task_seed))
                 # else:
-                print(f'seed == {env_seed}')
                 env.seed(seed=env_seed)
                 if max_steps:  # 0, None, False are null values.
                     # see issue #410: https://github.com/openai/gym/issues/410 the TimeLimit wrapper is now used as a

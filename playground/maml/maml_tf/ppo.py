@@ -40,15 +40,16 @@ class PPO:
 
             vpred = policy.vf
             vpred_clipped = inputs.OLD_V_PRED + \
-                            tf.tanh((policy.vf - inputs.OLD_V_PRED) * inputs.CLIP_RANGE)
-                            # tf.clip_by_value(policy.vf - inputs.OLD_V_PRED, - inputs.CLIP_RANGE, inputs.CLIP_RANGE)
+                            tf.clip_by_value(policy.vf - inputs.OLD_V_PRED, - inputs.CLIP_RANGE, inputs.CLIP_RANGE)
+            # vpred_clipped = inputs.OLD_V_PRED + \
+            #     tf.tanh((policy.vf - inputs.OLD_V_PRED) * inputs.CLIP_RANGE)
             vf_losses1 = tf.square(vpred - inputs.R)
             vf_losses2 = tf.square(vpred_clipped - inputs.R)
             vf_loss = .5 * tf.reduce_mean(tf.maximum(vf_losses1, vf_losses2))
             ratio = tf.exp(inputs.OLD_NEG_LOG_P_AC - self.neglogpac)
             pg_losses = -inputs.ADV * ratio
-            # pg_losses2 = -inputs.ADV * tf.clip_by_value(ratio, 1.0 - inputs.CLIP_RANGE, 1.0 + inputs.CLIP_RANGE)
-            pg_losses2 = -inputs.ADV * tf.tanh(ratio - 1.0) + 1.0
+            pg_losses2 = -inputs.ADV * tf.clip_by_value(ratio, 1.0 - inputs.CLIP_RANGE, 1.0 + inputs.CLIP_RANGE)
+            # pg_losses2 = -inputs.ADV * tf.tanh(ratio - 1.0) + 1.0
             pg_loss = tf.reduce_mean(tf.maximum(pg_losses, pg_losses2))
             # note: these are somehow not used.
             self.approxkl = .5 * tf.reduce_mean(tf.square(self.neglogpac - inputs.OLD_NEG_LOG_P_AC))
@@ -72,8 +73,8 @@ class Optimize:
             if max_grad_norm:  # allow 0 to be by-pass
                 # print('setting max-grad-norm to', max_grad_norm)
                 # tf.clip_by_global_norm is just fine. No need to use my own.
-                # _grads = [g * max_grad_norm / tf.maximum(max_grad_norm, tf.norm(g)) for g in _grads]
-                _grads, grad_norm = tf.clip_by_global_norm(_grads, max_grad_norm)
+                _grads = [g * tf.stop_gradient(max_grad_norm / tf.maximum(max_grad_norm, tf.norm(g))) for g in _grads]
+                # _grads, grad_norm = tf.clip_by_global_norm(_grads, max_grad_norm)
 
             self.grads = _grads
 
@@ -108,7 +109,6 @@ class Optimize:
 
         # Function to compute the PPO gradients
         self.run_grads = lambda *, feed_dict: tf.get_default_session().run([_grads], feed_dict)
-
 
 
 def path_to_feed_dict(*, inputs: Inputs, paths, lr=None, clip_range, **_r):

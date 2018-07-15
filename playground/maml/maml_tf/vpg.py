@@ -19,6 +19,7 @@ class Inputs:
         self.ADV = ADV or tf.placeholder(tf.float32, [None], name="ADV")
         self.R = R or tf.placeholder(tf.float32, [None], name="R")
 
+
 class VPG:
     def __init__(self, *, inputs, policy, vf_coef):
         self.inputs = inputs
@@ -45,8 +46,8 @@ class Optimize(object):
             if max_grad_norm:  # allow 0 to be by-pass
                 # print('setting max-grad-norm to', max_grad_norm)
                 # tf.clip_by_global_norm is just fine. No need to use my own.
-                # _grads = [g * max_grad_norm / tf.maximum(max_grad_norm, tf.norm(g)) for g in _grads]
-                _grads, grad_norm = tf.clip_by_global_norm(_grads, max_grad_norm)
+                _grads = [g * tf.stop_gradient(max_grad_norm / tf.maximum(max_grad_norm, tf.norm(g))) for g in _grads]
+                # _grads, grad_norm = tf.clip_by_global_norm(_grads, max_grad_norm)
 
             self.grads = _grads
 
