@@ -129,7 +129,7 @@ def path_to_feed_dict(*, inputs: Inputs, paths, lr=None, clip_range, **_r):
 
     feed_dict = {
         inputs.X: paths['obs'].reshape(n, -1),
-        inputs.A: paths['actions'].reshape(n, -1),
+        inputs.A: paths['acs'].reshape(n, -1),
         inputs.ADV: advs_normalized.reshape(-1),
         inputs.OLD_NEG_LOG_P_AC: paths['neglogpacs'].reshape(-1),
         inputs.OLD_V_PRED: paths['values'].reshape(-1),
@@ -137,5 +137,6 @@ def path_to_feed_dict(*, inputs: Inputs, paths, lr=None, clip_range, **_r):
         inputs.CLIP_RANGE: clip_range
     }
     if lr is not None:
+        assert inputs.LR is not None, f'Input should have LR attribute if a learning rate is passed.'
         feed_dict[inputs.LR] = lr
     return feed_dict

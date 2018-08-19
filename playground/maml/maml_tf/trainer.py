@@ -79,7 +79,7 @@ class Trainer(object):
         for epoch_ind in range(G.n_epochs):
             # should_save = (epoch_ind % Reporting.save_interval == 0) if Reporting.save_interval else False
 
-            frac = 1.0 - (epoch_ind - 1.0) / G.n_epochs
+        frac = 1.0 - (epoch_ind - 1.0) / G.n_epochs
             alpha_lr = G.alpha * frac
             beta_lr = G.beta * frac
             clip_range = G.clip_range * frac
@@ -104,13 +104,11 @@ class Trainer(object):
                     gradient_sum_op = maml.gradient_sum.add_op
 
                 if (task_ind == 0 and epoch_ind == 0) or not DEBUG.no_task_resample:
-                    print('===> re-sample tasks')
                     env = tasks.sample()
 
                 for k in range(max_grad_steps + 1):  # 0 - 10 <== last one being the maml policy.
                     # collect samples from the environment
                     if not G.single_sampling or (k == 0 or k == G.n_grad_steps):
-                        # M.print('$!#$@#$ sample from environment')
                         p = self.sample_from_env(env, maml.runner.policy, render=False)
 
                     ep_info = p['ep_info']
@@ -171,7 +169,7 @@ class Trainer(object):
 
             for key in batch_data.keys():
                 reduced = np.array(batch_data[key]).mean()
-                logger.log_keyvalue(epoch_ind, key, reduced)
+                logger.log_keyvalue(key, reduced, step=epoch_ind,)
                 comet_logger.log_metric(key, reduced, step=epoch_ind)
 
 

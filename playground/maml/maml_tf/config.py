@@ -6,7 +6,12 @@ DIR_TEMPLATE = "{now:%Y-%m-%d}/" \
                "{G.run_mode}-{G.env_name}-n_grad({G.n_grad_steps})" \
                "-{G.inner_alg}-{G.inner_optimizer}" \
                "-{G.meta_alg}-{G.meta_optimizer}-alpha({G.alpha})-beta({G.beta})" \
-               "-n_graphs({G.n_graphs})-env_norm({G.normalize_env})"  # type: "directory to use for logging"
+               "-n_graphs({G.n_graphs})-env_norm({G.normalize_env})" \
+               "-grad_norm({G.inner_max_grad_norm})-meta_grad_norm({G.meta_max_grad_norm})-{now:%H%M%S}-{now:%f}"
+
+from datetime import datetime
+
+now = datetime.now()
 
 
 @cli_parse
@@ -39,7 +44,7 @@ class G:
     eval_grad_steps = Proto(list(range(n_grad_steps + 1)),
                             help="the gradient steps at which we evaluate the policy. Used "
                                  "to make pretty plots.")
-    n_epochs = 2000  # type:  "Number of epochs"
+    n_epochs = 800  # type:  "Number of epochs"
     # 40k per task (action, state) tuples, or 20k (per task) if you have 10/20 meta tasks
     n_parallel_envs = 40  # type:  "Number of parallel envs in minibatch. The SubprocVecEnv batch_size."
     batch_timesteps = 100  # type:  "max_steps for each episode, used to set env._max_steps parameter"
@@ -50,9 +55,9 @@ class G:
     meta_sgd = Proto(False, help="NOT YET IMPLEMENTED. Learn a gradient for each parameter")
     # Note: MAML Options
     first_order = Proto(True, help="Whether to stop gradient calculation during meta-gradient calculation")
-    alpha = 0.1  # type:  "worker learning rate. use 0.1 for first step, 0.05 afterward ref:cbfinn"
+    alpha = 0.05  # type:  "worker learning rate. use 0.1 for first step, 0.05 afterward ref:cbfinn"
     beta = 0.01  # type:  "meta learning rate"
-    inner_alg = "PPO"  # type:  '"PPO" or "VPG", "rl_algs.VPG" or "rl_algs.PPO" for rl_algs baselines'
+    inner_alg = "VPG"  # type:  '"PPO" or "VPG", "rl_algs.VPG" or "rl_algs.PPO" for rl_algs baselines'
     inner_optimizer = "SGD"  # type:  '"Adam" or "SGD"'
     meta_alg = "PPO"  # type:  "PPO or TRPO, TRPO is not yet implemented."
     meta_optimizer = "Adam"  # type:  '"Adam" or "SGD"'
@@ -76,13 +81,6 @@ class G:
 class Reporting:
     report_mean = False  # type:  "plot the mean instead of the total reward per episode"
     log_device_placement = False
-
-    plot_server = "http://slab-krypton.uchicago.edu"  # type: "server url, need to include protocol [http(s)://]."
-    plot_server_port = 8097  # type: "port for the visdom server"
-
-    plot_interval = 10  # type: "plotting batch size"
-    plot_smoothing = 20  # type: "smoothing factor"
-    save_interval = 0  # type: "plotting batch size"
 
 
 @cli_parse

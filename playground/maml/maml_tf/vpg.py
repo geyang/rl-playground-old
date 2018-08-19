@@ -105,7 +105,7 @@ def path_to_feed_dict(*, inputs: Inputs, paths, lr=None, **_r):
 
     feed_dict = {
         inputs.X: paths['obs'].reshape(n, -1),
-        inputs.A: paths['actions'].reshape(n, -1),
+        inputs.A: paths['acs'].reshape(n, -1),
         inputs.ADV: advs_normalized.reshape(-1),
         inputs.R: paths['returns'].reshape(-1)
     }

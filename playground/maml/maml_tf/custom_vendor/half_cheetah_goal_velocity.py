@@ -29,7 +29,6 @@ class HalfCheetahGoalVelEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         utils.EzPickle.__init__(self)
 
     def seed(self, seed=None):
-        print(seed)
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
@@ -57,7 +56,6 @@ class HalfCheetahGoalVelEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         ])
 
     def set_goal_velocity(self, goal_velocity=None):
-        # print('***** goal velocity **********>>', goal_velocity)
         self.controls.sample(goal_velocity=goal_velocity)
 
     def get_goal_velocity(self):  # only for debugging

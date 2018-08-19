@@ -51,13 +51,14 @@ class MetaRLTasks:
                 # setting numpy.random.seed is a very bad pattern.
                 numpy.random.seed(env_seed)
                 if monitor_log_directory is not None:
-                    env = gym.wrappers.Monitor(env, monitor_log_directory.format(seed=seed), force=True)
+                    env = gym.wrappers.Monitor(env, monitor_log_directory.format(seed=env_seed), force=True)
                     # todo: use bench Montior
                     # from rl_algs.bench import Monitor
                     # env = Monitor(env, monitor_log_directory.format(seed=seed), force=True)
                 if wrap:
                     env = wrap(env)
                 return env
+
             return _f
 
         # if self.env_name in MAZE_KEYS:
@@ -84,14 +85,15 @@ class MetaRLTasks:
         envs = self.envs  # type: gym.Env
         if self.env_name == "HalfCheetahGoalVel-v0":
             new_goal = numpy.random.uniform(0, 2.0)
-            # print('New Goal Velocity: ', new_goal)
             envs.set_goal_velocity(new_goal if identical_batch else None)
         elif self.env_name == "HalfCheetahGoalDir-v0":
             new_direction = 1 if numpy.random.rand() > 0.5 else -1
-            # print('New Goal Velocity: ', new_goal)
             envs.set_goal_direction(new_direction if identical_batch else None)
         elif self.env_name in MAZE_KEYS:
             envs.reset_task()
+        elif self.env_name.startswith("ReacherMultiTask"):
+            new_goal_index = numpy.random.randint(0, 4)
+            envs.sample_task(index=new_goal_index if identical_batch else None)
         # elif self.env_name in GRID_WORLD_KEYS:
         #     if config.G.change_colors:
         #         envs.change_colors()
@@ -103,6 +105,13 @@ class MetaRLTasks:
             """For other envs, do nothing."""
         # algorithm always resets, so no need to reset here.
         return envs
+
+    @property
+    def task_spec(self):
+        if self.env_name == "ReacherMultiTask-v0":
+            index, *_ = self.envs.get_goal_index()
+            return dict(index=index)
+        return None
 
 
 if __name__ == "__main__":
